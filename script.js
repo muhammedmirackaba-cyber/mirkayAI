@@ -1,4 +1,3 @@
-// --- YENİ GÜNCEL Firebase Yapılandırması ---
 const firebaseConfig = {
     apiKey: "AIzaSyCAO5cE2T2ShFl4v9somN8Ws6KaWlF80cU",
     authDomain: "mirkayai.firebaseapp.com",
@@ -6,80 +5,71 @@ const firebaseConfig = {
     storageBucket: "mirkayai.firebasestorage.app",
     messagingSenderId: "467181525936",
     appId: "1:467181525936:web:16dc00ac9f155f92ccd475",
-    databaseURL: "https://mirkayai-default-rtdb.firebaseio.com" // Otomatik oluşturulan DB URL
+    databaseURL: "https://mirkayai-default-rtdb.firebaseio.com"
 };
 
-// Groq API Key (Yapay Zeka İçin)
-const GROQ_API_KEY = "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";
-
-// Firebase'i Başlat
 firebase.initializeApp(firebaseConfig);
 const auth = firebase.auth();
 const db = firebase.database();
 
-const emailInput = document.getElementById('email');
-const passwordInput = document.getElementById('password');
-const errorMsg = document.getElementById('error-message');
+// --- HIZLI KAYIT (İsim ve Şifre) ---
+function kayitOl() {
+    const user = document.getElementById('username').value;
+    const pass = document.getElementById('password').value;
+    const fakeEmail = user + "@mirkay.ai"; // Arka planda geçici e-posta oluşturur
 
-// --- KAYIT OLMA (Onay E-postası Gönderir) ---
-document.getElementById('register-btn').addEventListener('click', () => {
-    const email = emailInput.value;
-    const password = passwordInput.value;
-
-    if(!email || !password) {
-        alert("Lütfen alanları doldur!");
-        return;
-    }
-
-    auth.createUserWithEmailAndPassword(email, password)
+    auth.createUserWithEmailAndPassword(fakeEmail, pass)
     .then((userCredential) => {
-        userCredential.user.sendEmailVerification();
-        alert("Kayıt Başarılı! E-postana bir onay linki gönderdik. Onaylamadan Premium olamazsın.");
-        
-        // Veritabanına başlangıçta Premium Değil olarak kaydet
         db.ref('users/' + userCredential.user.uid).set({
-            email: email,
+            username: user,
             isPremium: false,
-            role: "user"
+            emailLinked: false
         });
+        alert("Kayıt Başarılı! Şimdi giriş yap.");
     })
-    .catch(e => {
-        errorMsg.innerText = "Hata: " + e.message;
-        errorMsg.style.display = "block";
-    });
-});
+    .catch(e => alert("Hata: " + e.message));
+}
 
-// --- GİRİŞ VE PREMIUM KONTROLÜ ---
-document.getElementById('login-btn').addEventListener('click', () => {
-    const email = emailInput.value;
-    const password = passwordInput.value;
+// --- GİRİŞ YAP ---
+function girisYap() {
+    const user = document.getElementById('username').value;
+    const pass = document.getElementById('password').value;
+    const fakeEmail = user + "@mirkay.ai";
 
-    auth.signInWithEmailAndPassword(email, password)
-    .then((userCredential) => {
-        const user = userCredential.user;
-
-        // 1. KURAL: E-posta onaylı mı?
-        if (!user.emailVerified) {
-            alert("E-postan henüz onaylanmamış! Lütfen gelen kutunu kontrol et.");
-            return;
-        }
-
-        // 2. KURAL: Premium mu? (Database'den bak)
-        db.ref('users/' + user.uid).once('value').then(snap => {
+    auth.signInWithEmailAndPassword(fakeEmail, pass)
+    .then((res) => {
+        document.getElementById('auth-box').style.display = 'none';
+        document.getElementById('profile-box').style.display = 'block';
+        document.getElementById('welcome-msg').innerText = "Hoş geldin, " + user;
+        
+        // Premium Kontrolü
+        db.ref('users/' + res.user.uid).on('value', snap => {
             const data = snap.val();
-            if (data && data.isPremium === true) {
-                alert("Hoş geldin Bozkurt! Premium Aktif.");
-                // Burada ana sayfaya git
-                window.location.href = "dashboard.html"; 
+            const pStatus = document.getElementById('premium-status');
+            if(data.isPremium) {
+                pStatus.innerText = "🏆 PREMİUM ÜYE (Aktif)";
             } else {
-                alert("Giriş Başarılı! Ancak Premium değilsin. 100 TL ödeyerek Premium olabilirsin.");
-                // Burada ödeme sayfasına git
-                window.location.href = "payment.html"; 
+                pStatus.innerText = "Standart Üye (Premium İçin E-posta Bağla)";
             }
         });
     })
-    .catch(e => {
-        errorMsg.innerText = "Hata: " + e.message;
-        errorMsg.style.display = "block";
-    });
-});
+    .catch(e => alert("Giriş Hatalı!"));
+}
+
+// --- E-POSTA BAĞLA (Premium Şartı) ---
+function emailBagla() {
+    const email = document.getElementById('new-email').value;
+    const user = auth.currentUser;
+
+    if(!email.includes("@")) { alert("Geçerli e-posta gir!"); return; }
+
+    user.updateEmail(email).then(() => {
+        user.sendEmailVerification();
+        db.ref('users/' + user.uid).update({ emailLinked: true, realEmail: email });
+        alert("E-posta bağlandı ve onay kodu gönderildi! Onaylayınca yöneticiye 100 TL ilet.");
+    }).catch(e => alert("Hata: " + e.message));
+}
+
+function cikisYap() {
+    auth.signOut().then(() => location.reload());
+}
