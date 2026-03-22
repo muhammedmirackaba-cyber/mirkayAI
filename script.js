@@ -12,84 +12,58 @@ firebase.initializeApp(firebaseConfig);
 const auth = firebase.auth();
 const db = firebase.database();
 
-let userLimit = 50;
-let isPremium = false;
+let hak = 50;
+let premium = false;
 
-// --- HIZLI KAYIT/GİRİŞ ---
-async function hizliKayit() {
+// --- GİRİŞ SİSTEMİ ---
+function hizliGiris() {
     const user = document.getElementById('username').value;
     const pass = document.getElementById('password').value;
+    if(!user || !pass) return alert("Doldur!");
+    
     const email = user + "@mirkayai.com";
 
-    try {
-        let res = await auth.signInWithEmailAndPassword(email, pass).catch(() => {
-            return auth.createUserWithEmailAndPassword(email, pass);
-        });
-        setupUser(res.user);
-    } catch (e) { alert("Hata oluştu!"); }
+    auth.signInWithEmailAndPassword(email, pass).then(res => baslat(res.user))
+    .catch(() => {
+        auth.createUserWithEmailAndPassword(email, pass).then(res => baslat(res.user));
+    });
 }
 
-// --- SOSYAL GİRİŞLER ---
-function googleGiris() {
-    const provider = new firebase.auth.GoogleAuthProvider();
-    auth.signInWithPopup(provider).then(res => setupUser(res.user));
-}
-
-function facebookGiris() {
-    const provider = new firebase.auth.FacebookAuthProvider();
-    auth.signInWithPopup(provider).then(res => setupUser(res.user));
-}
-
-// --- KULLANICI KURULUMU ---
-function setupUser(user) {
-    document.getElementById('auth-screen').style.display = 'none';
-    document.getElementById('chat-area').style.display = 'flex';
-    document.getElementById('user-display').innerText = user.displayName || user.email.split('@')[0];
-
-    // DB'den verileri çek (Limit ve Premium durumu)
+function baslat(user) {
+    document.getElementById('login-overlay').style.display = 'none';
+    
     db.ref('users/' + user.uid).on('value', snap => {
-        const data = snap.val() || {};
-        isPremium = data.isPremium || false;
-        userLimit = data.dailyLimit !== undefined ? data.dailyLimit : 50;
-        
-        document.getElementById('limit-text').innerText = isPremium ? "Sınırsız Bozkurt" : "Kalan Hak: " + userLimit;
+        const d = snap.val() || {};
+        hak = d.limit !== undefined ? d.limit : 50;
+        premium = d.isPremium || false;
+        document.getElementById('limit-show').innerText = premium ? "Sınırsız" : hak;
     });
 }
 
 // --- MESAJ GÖNDERME ---
-function mesajGonder() {
-    const input = document.getElementById('msg-input');
-    if (!input.value) return;
+function gonder() {
+    const inp = document.getElementById('user-input');
+    const msgArea = document.getElementById('messages');
 
-    if (!isPremium && userLimit <= 0) {
-        alert("Günlük limitin bitti! Premium alarak sınırsız yazabilirsin.");
-        return;
-    }
+    if(!inp.value) return;
+    if(!premium && hak <= 0) return alert("Hak bitti!");
 
-    // Mesajı ekrana yaz (Burada Groq API'ye de gönderebilirsin)
-    const msgDiv = document.getElementById('messages');
-    msgDiv.innerHTML += `<div><b>Siz:</b> ${input.value}</div>`;
+    // Ekrana Yaz
+    msgArea.innerHTML += `<div class="user-msg message">${inp.value}</div>`;
     
-    // Limiti Düşür
-    if (!isPremium) {
-        userLimit--;
-        db.ref('users/' + auth.currentUser.uid).update({ dailyLimit: userLimit });
+    // Groq API Bağlantısını buraya ekleyebiliriz (Önceki mesajlardaki gibi)
+    setTimeout(() => {
+        msgArea.innerHTML += `<div class="ai-msg message">Mesajın alındı Bozkurt. (Şu an test modundayız)</div>`;
+        msgArea.scrollTop = msgArea.scrollHeight;
+    }, 1000);
+
+    if(!premium) {
+        hak--;
+        db.ref('users/' + auth.currentUser.uid).update({ limit: hak });
     }
 
-    input.value = "";
-    msgDiv.scrollTop = msgDiv.scrollHeight;
+    inp.value = "";
+    msgArea.scrollTop = msgArea.scrollHeight;
 }
 
-// --- E-POSTA BAĞLAMA ---
-function showEmailLink() {
-    const email = prompt("Sınırsız hak için gerçek e-postanı gir:");
-    if (email && email.includes("@")) {
-        auth.currentUser.updateEmail(email).then(() => {
-            auth.currentUser.sendEmailVerification();
-            db.ref('users/' + auth.currentUser.uid).update({ emailLinked: true, pendingEmail: email });
-            alert("E-posta bağlandı. Onayladıktan sonra yöneticiye 100 TL ileterek Premium olabilirsin.");
-        }).catch(e => alert("Hata: " + e.message));
-    }
-}
-
-function logout() { auth.signOut().then(() => location.reload()); }
+function cikis() { auth.signOut().then(() => location.reload()); }
