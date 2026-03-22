@@ -2,44 +2,52 @@
 <html lang="tr">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Mirkay AI | Bozkurt</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Mirkay AI</title>
     <style>
-        body { margin: 0; background: #fff; font-family: 'Segoe UI', sans-serif; overflow: hidden; }
-        .wolf-bg { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 300px; opacity: 0.05; z-index: -1; }
+        /* MOBİL UYGULAMA AYARLARI */
+        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+        body { margin: 0; background: #fff; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
         
-        /* Üst Bar */
-        .top-bar { position: fixed; top: 0; width: 100%; height: 60px; display: flex; align-items: center; justify-content: space-between; padding: 0 20px; background: #fff; border-bottom: 1px solid #eee; z-index: 1000; box-sizing: border-box; }
-        .hamburger, .profile-btn { font-size: 24px; cursor: pointer; }
+        .wolf-bg { position: fixed; top: 40%; left: 50%; transform: translate(-50%, -50%); width: 250px; opacity: 0.05; z-index: -1; pointer-events: none; }
+        
+        /* Üst Bar (iOS/Android Style) */
+        .top-bar { height: 60px; display: flex; align-items: center; justify-content: space-between; padding: 0 15px; background: #fff; border-bottom: 1px solid #f0f0f0; z-index: 1000; flex-shrink: 0; }
+        .hamburger, .profile-btn { font-size: 22px; cursor: pointer; padding: 10px; }
 
-        /* Sol Menü (Geçmiş) */
-        #side-menu { position: fixed; top: 0; left: -300px; width: 280px; height: 100%; background: #000; color: #fff; transition: 0.3s; z-index: 1001; padding: 20px; box-sizing: border-box; }
+        /* Yan Menüler */
+        .side-panel { position: fixed; top: 0; width: 80%; max-width: 300px; height: 100%; background: #fff; transition: 0.3s cubic-bezier(0.4, 0, 0.2, 1); z-index: 2000; box-shadow: 0 0 20px rgba(0,0,0,0.1); }
+        #side-menu { left: -300px; background: #000; color: #fff; }
         #side-menu.active { left: 0; }
-        .menu-item { background: #111; padding: 12px; margin: 10px 0; border-radius: 8px; font-size: 14px; cursor: pointer; border: 1px solid #222; transition: 0.2s; }
-        .menu-item:hover { background: #222; }
-
-        /* Sağ Menü (Profil/Hesap) */
-        #profile-menu { position: fixed; top: 0; right: -300px; width: 280px; height: 100%; background: #fff; border-left: 1px solid #eee; transition: 0.3s; z-index: 1001; padding: 20px; box-sizing: border-box; text-align: center; }
+        #profile-menu { right: -300px; }
         #profile-menu.active { right: 0; }
+        
+        .menu-header { padding: 20px; font-weight: bold; border-bottom: 1px solid #eee; display: flex; justify-content: space-between; }
 
-        /* Sohbet Alanı */
-        #chat-container { height: 100vh; overflow-y: auto; padding: 80px 20px 100px; display: flex; flex-direction: column; box-sizing: border-box; }
-        .msg { padding: 12px 18px; border-radius: 20px; margin: 5px; max-width: 75%; border: 1px solid #eee; word-wrap: break-word; }
-        .user-msg { align-self: flex-end; background: #f0f0f0; color: #000; }
-        .ai-msg { align-self: flex-start; background: #000; color: #fff; }
+        /* Sohbet Listesi */
+        .menu-item { padding: 15px; margin: 10px; border-radius: 12px; background: #111; border: 1px solid #222; font-size: 14px; }
 
-        /* Girişler ve Butonlar */
-        #input-area { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); width: 90%; max-width: 600px; display: flex; gap: 10px; }
-        input { flex: 1; padding: 12px; border: 1px solid #ddd; border-radius: 25px; outline: none; }
-        button { padding: 12px 20px; background: #000; color: #fff; border: none; border-radius: 25px; cursor: pointer; font-weight: bold; }
-        .btn-gold { background: #FFD700; color: #000; width: 100%; margin: 10px 0; }
-        .btn-red { background: #ff4d4d; color: #fff; width: 100%; margin: 10px 0; }
-        .btn-outline { background: #fff; color: #000; border: 1px solid #000; width: 100%; margin: 10px 0; }
+        /* Mesaj Alanı (Kaydırılabilir) */
+        #chat-container { flex: 1; overflow-y: auto; padding: 15px; display: flex; flex-direction: column; scroll-behavior: smooth; }
+        .msg { padding: 12px 16px; border-radius: 18px; margin: 4px 0; max-width: 85%; font-size: 15px; line-height: 1.4; word-wrap: break-word; }
+        .user-msg { align-self: flex-end; background: #000; color: #fff; border-bottom-right-radius: 4px; }
+        .ai-msg { align-self: flex-start; background: #f0f0f0; color: #000; border-bottom-left-radius: 4px; border: 1px solid #eee; }
 
-        /* Auth Overlay */
-        #auth-overlay { position: fixed; top:0; left:0; width:100%; height:100%; background: #fff; z-index: 2000; display: flex; align-items: center; justify-content: center; }
-        .auth-box { text-align: center; width: 300px; }
+        /* Alt Giriş Alanı (Klavye Dostu) */
+        .input-wrapper { padding: 10px 15px 25px; background: #fff; border-top: 1px solid #f0f0f0; display: flex; gap: 8px; align-items: center; }
+        input { flex: 1; padding: 12px 18px; border: 1px solid #ddd; border-radius: 25px; outline: none; font-size: 16px; background: #f9f9f9; }
+        .send-btn { width: 45px; height: 45px; background: #000; color: #fff; border: none; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; }
+
+        /* Auth Screen */
+        #auth-overlay { position: fixed; inset: 0; background: #fff; z-index: 3000; display: flex; align-items: center; justify-content: center; padding: 20px; }
+        .auth-box { width: 100%; max-width: 320px; text-align: center; }
+        .auth-box input { width: 100%; margin: 8px 0; }
         .hidden { display: none !important; }
+        
+        /* Modern Butonlar */
+        .btn-action { width: 100%; padding: 12px; border-radius: 12px; border: none; font-weight: bold; margin: 5px 0; cursor: pointer; }
+        .bg-gold { background: #FFD700; color: #000; }
+        .bg-red { background: #ff4d4d; color: #fff; }
     </style>
 </head>
 <body>
@@ -48,39 +56,41 @@
 
     <div class="top-bar">
         <div class="hamburger" onclick="toggleMenu('side-menu')">☰</div>
-        <strong>Mirkay AI</strong>
+        <strong style="letter-spacing: 1px;">MİRKAY AI</strong>
         <div class="profile-btn" onclick="toggleMenu('profile-menu')">👤</div>
     </div>
 
-    <div id="side-menu">
-        <div style="font-size: 18px; margin-bottom: 20px; font-weight: bold;">Sohbet Geçmişi <span onclick="toggleMenu('side-menu')" style="float:right; cursor:pointer;">×</span></div>
+    <div id="side-menu" class="side-panel">
+        <div class="menu-header">Geçmiş Sohbetler <span onclick="toggleMenu('side-menu')">×</span></div>
         <div id="history-list"></div>
     </div>
 
-    <div id="profile-menu">
-        <div style="font-size: 18px; margin-bottom: 20px; font-weight: bold;">Hesabım <span onclick="toggleMenu('profile-menu')" style="float:right; cursor:pointer;">×</span></div>
-        <p id="user-display-name" style="font-weight: bold;"></p>
-        <p id="display-status" style="font-size: 13px; color: #666;"></p>
-        <hr>
-        <button class="btn-outline" onclick="emailBagla()">📧 E-posta Bağla</button>
-        <button class="btn-gold" onclick="alert('Google Play üzerinden yakında!')">🏆 Premium Ol</button>
-        <button class="btn-red" onclick="cikisYap()">🚪 Çıkış Yap</button>
+    <div id="profile-menu" class="side-panel">
+        <div class="menu-header" style="color:#000;">Profil Ayarları <span onclick="toggleMenu('profile-menu')">×</span></div>
+        <div style="padding: 20px; text-align: center; color: #000;">
+            <p id="user-display-name" style="font-size: 18px; font-weight: bold; margin-bottom: 5px;"></p>
+            <p id="display-status" style="font-size: 14px; color: #666;"></p>
+            <hr style="margin: 20px 0; border: 0; border-top: 1px solid #eee;">
+            <button class="btn-action" style="border: 1px solid #000; background: #fff;" onclick="emailBagla()">E-posta Bağla</button>
+            <button class="btn-action bg-gold" onclick="alert('Yakında!')">Premium'a Geç</button>
+            <button class="btn-action bg-red" onclick="cikisYap()">Çıkış Yap</button>
+        </div>
     </div>
 
     <div id="auth-overlay" class="hidden">
         <div class="auth-box">
-            <h2>Giriş Yap</h2>
-            <input type="text" id="reg-username" placeholder="İsim">
+            <h1 style="margin-bottom: 30px;">🐺</h1>
+            <input type="text" id="reg-username" placeholder="Kullanıcı Adı">
             <input type="password" id="reg-password" placeholder="Şifre">
-            <button onclick="hizliKayit()" style="width:100%; margin-top:10px;">Devam Et</button>
+            <button class="btn-action" style="background:#000; color:#fff; margin-top:10px;" onclick="hizliKayit()">Başlat</button>
         </div>
     </div>
 
     <div id="chat-container"></div>
 
-    <div id="input-area">
-        <input type="text" id="user-input" placeholder="Bir şeyler yaz...">
-        <button onclick="mesajGonder()">Gönder</button>
+    <div class="input-wrapper">
+        <input type="text" id="user-input" placeholder="Mesajını yaz..." autocomplete="off">
+        <button class="send-btn" onclick="mesajGonder()">🚀</button>
     </div>
 
     <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-app-compat.js"></script>
