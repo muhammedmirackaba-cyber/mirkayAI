@@ -3,12 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Mirkay AI | Official</title>
+    <title>Mirkay AI | Kararlı Sürüm</title>
     <style>
         * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
         body { margin: 0; background: #fff; font-family: sans-serif; height: 100vh; display: flex; flex-direction: column; overflow: hidden; position: relative; }
 
-        /* BOZKURT ARKA PLAN - Dokunmayı engellemez */
+        /* BOZKURT ARKA PLAN */
         .wolf-bg { 
             position: fixed; top: 45%; left: 50%; transform: translate(-50%, -50%); 
             width: 260px; opacity: 0.1; z-index: 0; pointer-events: none; 
@@ -18,7 +18,7 @@
         .top-bar { height: 60px; display: flex; align-items: center; justify-content: space-between; padding: 0 15px; border-bottom: 1px solid #eee; background: #fff; z-index: 1000; }
         .hamburger, .profile-btn { font-size: 26px; cursor: pointer; padding: 5px; color: #000; }
 
-        /* YAN PANELLER */
+        /* PANELLER */
         .side-panel { 
             position: fixed; top: 0; width: 280px; height: 100%; transition: 0.3s ease; 
             z-index: 2000; display: flex; flex-direction: column; box-shadow: 0 0 15px rgba(0,0,0,0.1);
@@ -36,9 +36,8 @@
         .msg { padding: 12px 16px; border-radius: 18px; margin: 5px 0; max-width: 85%; font-size: 15px; line-height: 1.4; }
         .user-msg { align-self: flex-end; background: #000; color: #fff; border-bottom-right-radius: 4px; }
         .ai-msg { align-self: flex-start; background: #f0f0f0; border: 1px solid #eee; border-bottom-left-radius: 4px; }
-        .limit-msg { align-self: center; background: #fff3f3; color: #d32f2f; border: 1px solid #ffcdd2; text-align: center; font-weight: bold; width: 95%; margin: 10px 0; }
 
-        /* MESAJ GİRİŞİ */
+        /* GİRİŞ ALANI */
         .input-wrapper { padding: 10px 15px 25px; background: #fff; border-top: 1px solid #eee; z-index: 1000; }
         #chat-form { display: flex; gap: 8px; }
         input { flex: 1; padding: 12px 18px; border: 1px solid #ddd; border-radius: 25px; font-size: 16px; outline: none; }
@@ -54,9 +53,7 @@
 
     <div id="overlay" onclick="closeAllMenus()"></div>
     
-    <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/2/2a/Gray_wolf_head_silhouette.svg/1024px-Gray_wolf_head_silhouette.svg.png" 
-         class="wolf-bg" 
-         onerror="this.src='https://i.ibb.co/vz6m8XN/wolf-silhouette.png'">
+    <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/2/2a/Gray_wolf_head_silhouette.svg/1024px-Gray_wolf_head_silhouette.svg.png" class="wolf-bg">
 
     <div class="top-bar">
         <div class="hamburger" onclick="toggleMenu('side-menu')">☰</div>
