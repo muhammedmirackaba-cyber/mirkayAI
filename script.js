@@ -1,4 +1,3 @@
-// FIREBASE AYARLARI
 const firebaseConfig = {
     apiKey: "AIzaSyCAO5cE2T2ShFl4v9somN8Ws6KaWlF80cU",
     authDomain: "mirkayai.firebaseapp.com",
@@ -15,25 +14,27 @@ const db = firebase.database();
 
 let userStats = { mesajHakki: 100, reklamSayaci: 0 };
 
-// GİRİŞ KONTROLÜ VE HAKLARIN YÜKLENMESİ
+// KULLANICI KONTROLÜ VE VERİ ÇEKME
 auth.onAuthStateChanged(user => {
     if(!user) {
         auth.signInAnonymously();
     } else {
         db.ref('users/' + user.uid).on('value', snap => {
-            const data = snap.val();
-            // NaN HATASI FIX: Verinin sayı olduğundan emin oluyoruz
-            if(data && typeof data.mesajHakki === 'number') {
-                userStats = data;
+            let data = snap.val();
+            // NaN (Sayı Değil) Hatası Koruması
+            if(!data || isNaN(data.mesajHakki) || typeof data.mesajHakki !== 'number') {
+                db.ref('users/' + user.uid).set({ mesajHakki: 100, reklamSayaci: 0 });
+                userStats = { mesajHakki: 100, reklamSayaci: 0 };
             } else {
-                db.ref('users/' + user.uid).set(userStats);
+                userStats = data;
             }
-            document.getElementById('status-info').innerText = `Kalan Mesaj Hakkı: ${userStats.mesajHakki}\nDurum: Ücretsiz Sürüm`;
+            const info = document.getElementById('status-info');
+            if(info) info.innerText = `Kalan Mesaj Hakkı: ${userStats.mesajHakki}\nStatü: Ücretsiz`;
         });
     }
 });
 
-// MESAJ GÖNDERME SİSTEMİ
+// MESAJ GÖNDERME
 function mesajGonder() {
     const input = document.getElementById('user-input');
     const msg = input.value.trim();
@@ -41,31 +42,30 @@ function mesajGonder() {
 
     if (!msg) return;
 
-    // 1. HAK KONTROLÜ
-    if (userStats.mesajHakki <= 0) {
+    // Hak Kontrolü
+    let suankiHak = Number(userStats.mesajHakki);
+    if (suankiHak <= 0) {
         container.innerHTML += `<div class="msg limit-msg">⚠️ Şuan mesaj yazamazsınız, yazı yazmak için 1 gün bekleyin veya premium satın alın.</div>`;
-        input.value = ""; // Kutuyu temizle
+        input.value = "";
         container.scrollTop = container.scrollHeight;
         return;
     }
 
-    // 2. MESAJI EKRANA BAS VE KUTUYU ANINDA BOŞALT
+    // Mesajı Bas ve Kutuyu Temizle (Donma Fix)
     container.innerHTML += `<div class="msg user-msg">${msg}</div>`;
-    input.value = ""; // Yazı kutusu burada temizleniyor (Donma Fix)
-    
-    // 3. FIREBASE GÜNCELLE (Sayı olarak düşür)
-    const currentUid = auth.currentUser.uid;
-    const yeniHak = Number(userStats.mesajHakki) - 1;
-    
-    db.ref('users/' + currentUid).update({ mesajHakki: yeniHak });
-    
+    input.value = ""; 
     container.scrollTop = container.scrollHeight;
 
-    // 4. CEVAP SİSTEMİ
-    setTimeout(() => {
-        container.innerHTML += `<div class="msg ai-msg">Anladım Mirkay, kurtlar her zaman yolunu bulur! 🐺</div>`;
-        container.scrollTop = container.scrollHeight;
-    }, 600);
+    // Firebase Güncelle
+    const yeniHak = suankiHak - 1;
+    db.ref('users/' + auth.currentUser.uid).update({ mesajHakki: yeniHak })
+    .then(() => {
+        // Cevap Verme
+        setTimeout(() => {
+            container.innerHTML += `<div class="msg ai-msg">Anladım Mirkay, kurtlar her zaman yolunu bulur! 🐺</div>`;
+            container.scrollTop = container.scrollHeight;
+        }, 600);
+    });
 }
 
 // PANEL KONTROLLERİ
@@ -83,11 +83,11 @@ function closeAllMenus() {
 
 function emailBagla() {
     const mail = prompt("E-postanızı girin:");
-    if(mail) alert("E-posta başarıyla kaydedildi!");
+    if(mail) alert("E-posta başarıyla bağlandı!");
 }
 
 function gecmisiSil() {
-    if(confirm("Tüm mesajlar silinsin mi?")) {
+    if(confirm("Sohbet silinsin mi?")) {
         document.getElementById('chat-container').innerHTML = "";
         closeAllMenus();
     }
