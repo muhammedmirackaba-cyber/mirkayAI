@@ -19,7 +19,7 @@ auth.onAuthStateChanged(user => {
     else {
         db.ref('users/' + user.uid).on('value', snap => {
             userStats = snap.val() || { mesajHakki: 100, reklamSayaci: 0 };
-            document.getElementById('status-info').innerText = `Kalan Hak: ${userStats.mesajHakki}`;
+            document.getElementById('status-info').innerText = `Kalan Mesaj Hakkı: ${userStats.mesajHakki}\nReklam Durumu: Ücretsiz`;
         });
     }
 });
@@ -31,41 +31,60 @@ function mesajGonder() {
 
     if (!msg) return;
 
-    // 1. MESAJ HAKKI KONTROLÜ
     if (userStats.mesajHakki <= 0) {
-        container.innerHTML += `<div class="msg limit-msg">⚠️ Şuan mesaj yazamazsınız, yazı yazmak için 1 gün bekleyin veya premium satın alın.</div>`;
-        container.scrollTop = container.scrollHeight;
+        container.innerHTML += `<div class="msg user-msg" style="background:#444">⚠️ Hak bitti. Premium alın.</div>`;
         return;
     }
 
-    // 2. REKLAM KONTROLÜ (Her 25 mesajda bir)
-    userStats.reklamSayaci++;
-    if (userStats.reklamSayaci >= 25) {
-        document.getElementById('ad-modal').style.display = 'flex';
-        userStats.reklamSayaci = 0; // Sayacı sıfırla
-    }
-
-    // Mesajı Bas ve Hakkı Düş
     container.innerHTML += `<div class="msg user-msg">${msg}</div>`;
     const yeniHak = userStats.mesajHakki - 1;
-    db.ref('users/' + auth.currentUser.uid).update({ 
-        mesajHakki: yeniHak, 
-        reklamSayaci: userStats.reklamSayaci 
-    });
-
+    db.ref('users/' + auth.currentUser.uid).update({ mesajHakki: yeniHak });
+    
     input.value = "";
     container.scrollTop = container.scrollHeight;
 
     setTimeout(() => {
-        container.innerHTML += `<div class="msg ai-msg">Anladım Mirkay, kurtlar her zaman yolunu bulur! 🐺</div>`;
+        container.innerHTML += `<div class="msg ai-msg">Mesajını aldım Mirkay, kurtlar vadiye iniyor! 🐺</div>`;
         container.scrollTop = container.scrollHeight;
-    }, 800);
+    }, 600);
 }
 
-function reklamKapat() {
-    // 5 saniye bekleme eklenebilir ama şimdilik direkt kapatıyoruz
-    document.getElementById('ad-modal').style.display = 'none';
+// PANEL KONTROLLERİ
+function toggleMenu(id) {
+    const menu = document.getElementById(id);
+    const overlay = document.getElementById('overlay');
+    const isActive = menu.classList.contains('active');
+
+    closeAllMenus(); // Önce her şeyi kapat
+
+    if (!isActive) {
+        menu.classList.add('active');
+        overlay.style.display = 'block';
+    }
 }
 
-function toggleMenu(id) { document.getElementById(id).classList.toggle('active'); }
-function yeniSohbet() { document.getElementById('chat-container').innerHTML = ""; toggleMenu('side-menu'); }
+function closeAllMenus() {
+    document.getElementById('side-menu').classList.remove('active');
+    document.getElementById('profile-menu').classList.remove('active');
+    document.getElementById('overlay').style.display = 'none';
+}
+
+function emailBagla() {
+    const email = prompt("E-posta adresinizi girin:");
+    if(email) alert(email + " başarıyla bağlandı! (Simülasyon)");
+}
+
+function gecmisiTemizle() {
+    if(confirm("Tüm sohbet geçmişini silmek istediğine emin misin?")) {
+        document.getElementById('chat-container').innerHTML = "";
+        alert("Sohbet temizlendi!");
+        closeAllMenus();
+    }
+}
+
+function yeniSohbet() { 
+    document.getElementById('chat-container').innerHTML = ""; 
+    closeAllMenus(); 
+}
+
+function cikisYap() { auth.signOut().then(() => location.reload()); }
