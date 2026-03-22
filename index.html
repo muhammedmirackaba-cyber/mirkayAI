@@ -4,140 +4,42 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>MİRKAY AI - Bozkurt Giriş</title>
-    
     <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-database-compat.js"></script>
 
     <style>
-        /* Tasarım: Arka Plan Siyah ve Bozkurt Temalı */
-        body { 
-            margin: 0; 
-            background-color: #000000; 
-            color: #ffffff; 
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
-            display: flex; 
-            justify-content: center; 
-            align-items: center; 
-            height: 100vh; 
-            overflow: hidden; 
-        }
-
-        /* Arka plandaki flulu Bozkurt */
-        .background-bozkurt { 
-            position: absolute; 
-            top: 0; 
-            left: 0; 
-            width: 100%; 
-            height: 100%; 
-            background-image: url('icon.png'); 
-            background-size: contain; 
-            background-position: center; 
-            background-repeat: no-repeat; 
-            opacity: 0.15; 
-            filter: blur(4px); 
-            z-index: -1; 
-        }
-
-        /* Giriş Paneli */
-        .login-box { 
-            background-color: rgba(15, 15, 15, 0.95); 
-            padding: 45px; 
-            border-radius: 20px; 
-            box-shadow: 0 0 35px rgba(255, 0, 0, 0.25); 
-            width: 350px; 
-            text-align: center; 
-            border: 1px solid #222; 
-        }
-
-        h2 { 
-            margin-bottom: 30px; 
-            font-weight: bold; 
-            letter-spacing: 4px; 
-            color: #f0f0f0; 
-            text-shadow: 0 0 10px rgba(255, 255, 255, 0.1);
-        }
-
-        input { 
-            width: 100%; 
-            padding: 15px; 
-            margin-bottom: 15px; 
-            background: #111; 
-            border: 1px solid #333; 
-            border-radius: 12px; 
-            color: #fff; 
-            box-sizing: border-box; 
-            font-size: 15px;
-            transition: 0.3s;
-        }
-
-        input:focus { 
-            border-color: #ff0000; 
-            outline: none; 
-            box-shadow: 0 0 15px rgba(255, 0, 0, 0.15); 
-        }
-
-        /* Butonlar */
-        .btn { 
-            width: 100%; 
-            padding: 15px; 
-            border: none; 
-            border-radius: 12px; 
-            cursor: pointer; 
-            font-weight: bold; 
-            font-size: 16px;
-            margin-bottom: 12px; 
-            transition: 0.3s; 
-        }
-
-        .btn-login { 
-            background: #ff0000; 
-            color: #fff; 
-            box-shadow: 0 4px 15px rgba(255, 0, 0, 0.3);
-        }
-
-        .btn-login:hover { 
-            background: #cc0000; 
-            transform: scale(1.02); 
-        }
-
-        .btn-register { 
-            background: #1a1a1a; 
-            color: #888; 
-            font-size: 13px;
-            border: 1px solid #333;
-        }
-
-        .btn-register:hover { 
-            background: #222; 
-            color: #fff; 
-        }
-
-        #error-message { 
-            color: #ff4d4d; 
-            font-size: 13px; 
-            margin-top: 15px; 
-            display: none; 
-        }
+        body { margin: 0; background: #000; color: #fff; font-family: sans-serif; display: flex; justify-content: center; align-items: center; height: 100vh; overflow: hidden; }
+        .bg { position: absolute; width: 100%; height: 100%; background: url('icon.png') center/contain no-repeat; opacity: 0.1; filter: blur(3px); z-index: -1; }
+        .box { background: rgba(15, 15, 15, 0.98); padding: 35px; border-radius: 20px; box-shadow: 0 0 30px rgba(255, 0, 0, 0.2); width: 330px; text-align: center; border: 1px solid #222; }
+        h2 { letter-spacing: 3px; color: #fff; margin-bottom: 25px; }
+        input { width: 100%; padding: 14px; margin-bottom: 12px; background: #111; border: 1px solid #333; border-radius: 10px; color: #fff; box-sizing: border-box; }
+        .btn { width: 100%; padding: 14px; border: none; border-radius: 10px; cursor: pointer; font-weight: bold; margin-bottom: 10px; transition: 0.3s; }
+        .btn-red { background: #ff0000; color: #fff; }
+        .btn-gray { background: #222; color: #888; font-size: 12px; }
+        #status { color: #ff4444; font-size: 13px; margin-top: 10px; }
     </style>
 </head>
 <body>
-
-    <div class="background-bozkurt"></div>
-
-    <div class="login-box">
+    <div class="bg"></div>
+    <div class="box" id="auth-box">
         <h2>MİRKAY AI</h2>
-        
-        <input type="email" id="email" placeholder="E-Posta Adresiniz" required>
-        <input type="password" id="password" placeholder="Şifreniz" required>
-        
-        <button class="btn btn-login" id="login-btn">SİSTEME GİRİŞ</button>
-        <button class="btn btn-register" id="register-btn">YENİ BOZKURT KAYDI</button>
-        
-        <div id="error-message"></div>
+        <input type="text" id="username" placeholder="Kullanıcı Adı">
+        <input type="password" id="password" placeholder="Şifre">
+        <button class="btn btn-red" onclick="girisYap()">GİRİŞ YAP</button>
+        <button class="btn btn-gray" onclick="kayitOl()">HIZLI KAYIT OL</button>
+        <div id="status"></div>
+    </div>
+
+    <div class="box" id="profile-box" style="display:none;">
+        <h2>PROFİL</h2>
+        <p id="welcome-msg"></p>
+        <div id="premium-status" style="color: gold; margin-bottom: 15px;"></div>
+        <input type="email" id="new-email" placeholder="E-posta Bağla (Premium İçin)">
+        <button class="btn btn-red" onclick="emailBagla()">E-POSTA BAĞLA</button>
+        <button class="btn btn-gray" onclick="cikisYap()">ÇIKIŞ YAP</button>
     </div>
 
     <script src="script.js"></script>
-
 </body>
 </html>
