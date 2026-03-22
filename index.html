@@ -3,51 +3,55 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Mirkay AI</title>
+    <title>Mirkay AI | Bozkurt</title>
     <style>
+        /* TEMEL TASARIM */
         * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
-        body { margin: 0; background: #fff; font-family: sans-serif; height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
+        body { margin: 0; background: #fff; font-family: 'Segoe UI', sans-serif; height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
         
-        /* Bozkurt Arka Plan - Yeni Kesin Link */
-        .wolf-bg { position: fixed; top: 40%; left: 50%; transform: translate(-50%, -50%); width: 250px; opacity: 0.1; z-index: -1; pointer-events: none; }
+        /* BOZKURT ARKA PLAN (FIXED - Sağlam Link) */
+        .wolf-bg {
+            position: fixed; top: 40%; left: 50%; transform: translate(-50%, -50%);
+            width: 250px; opacity: 0.05; z-index: -1; pointer-events: none;
+        }
         
-        .top-bar { height: 60px; display: flex; align-items: center; justify-content: space-between; padding: 0 15px; background: #fff; border-bottom: 1px solid #eee; flex-shrink: 0; }
-        .hamburger, .profile-btn { font-size: 24px; cursor: pointer; padding: 5px; }
+        /* ÜST BAR */
+        .top-bar { height: 60px; display: flex; align-items: center; justify-content: space-between; padding: 0 20px; background: #fff; border-bottom: 1px solid #eee; z-index: 1000; flex-shrink: 0; }
+        .hamburger, .profile-btn { font-size: 24px; cursor: pointer; color: #000; padding: 5px; }
 
-        /* Sol Menü */
-        .side-panel { position: fixed; top: 0; width: 85%; max-width: 320px; height: 100%; background: #000; color: #fff; transition: 0.3s; z-index: 2000; display: flex; flex-direction: column; }
-        #side-menu { left: -320px; }
+        /* SOL MENÜ (Geçmiş) */
+        #side-menu { position: fixed; top: 0; left: -320px; width: 300px; height: 100%; background: #000; color: #fff; transition: 0.3s; z-index: 2000; display: flex; flex-direction: column; }
         #side-menu.active { left: 0; }
-        
-        .menu-header { padding: 20px; border-bottom: 1px solid #222; font-weight: bold; font-size: 18px; }
+        .menu-header { padding: 20px; border-bottom: 1px solid #333; font-weight: bold; font-size: 18px; }
         #history-list { flex: 1; overflow-y: auto; padding: 10px; }
+        .menu-item { background: #1a1a1a; padding: 12px; margin-bottom: 8px; border-radius: 10px; font-size: 14px; cursor: pointer; border: 1px solid #222; }
+
+        /* SAĞ MENÜ (Hesap Ayarları) - YENİ! */
+        #profile-menu { position: fixed; top: 0; right: -320px; width: 300px; height: 100%; background: #fff; transition: 0.3s; z-index: 2000; display: flex; flex-direction: column; border-left: 1px solid #eee; }
+        #profile-menu.active { right: 0; }
+        .p-menu-header { padding: 20px; border-bottom: 1px solid #eee; font-weight: bold; font-size: 18px; color: #000; }
         
-        /* Sohbet Öğesi ve Seçim Kutusu */
-        .menu-item-wrapper { display: flex; align-items: center; background: #111; margin-bottom: 8px; border-radius: 10px; padding: 5px 10px; border: 1px solid #222; }
-        .menu-item { flex: 1; padding: 10px; cursor: pointer; font-size: 14px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-        .delete-checkbox { width: 20px; height: 20px; cursor: pointer; display: none; margin-right: 10px; accent-color: #ff4d4d; }
-        .delete-checkbox.show { display: block; }
+        /* AYAR BUTONLARI */
+        .p-action-list { padding: 20px; text-align: center; }
+        .p-btn { width: 100%; padding: 15px; border-radius: 12px; border: none; font-weight: bold; margin-bottom: 10px; cursor: pointer; }
+        .bg-black { background: #000; color: #fff; }
+        .bg-gold { background: #FFD700; color: #000; }
+        .bg-red { background: #ff4d4d; color: #fff; }
+        .p-outline { background: #fff; color: #000; border: 1px solid #eee; }
 
-        /* Menü Butonları */
-        .menu-footer { padding: 15px; border-top: 1px solid #222; background: #000; }
-        .btn-menu { width: 100%; padding: 12px; border-radius: 8px; border: none; font-weight: bold; margin-bottom: 8px; cursor: pointer; }
-        .btn-new { background: #fff; color: #000; }
-        .btn-del { background: #333; color: #ff4d4d; }
-        .btn-confirm-del { background: #ff4d4d; color: #fff; display: none; }
-
-        /* Chat */
-        #chat-container { flex: 1; overflow-y: auto; padding: 15px; display: flex; flex-direction: column; }
-        .msg { padding: 12px 16px; border-radius: 18px; margin: 4px 0; max-width: 85%; line-height: 1.4; }
+        /* SOHBET ALANI */
+        #chat-container { flex: 1; overflow-y: auto; padding: 20px; display: flex; flex-direction: column; }
+        .msg { padding: 12px 16px; border-radius: 20px; margin: 4px 0; max-width: 80%; line-height: 1.4; font-size: 15px; }
         .user-msg { align-self: flex-end; background: #000; color: #fff; border-bottom-right-radius: 4px; }
         .ai-msg { align-self: flex-start; background: #f0f0f0; color: #000; border-bottom-left-radius: 4px; border: 1px solid #eee; }
 
-        /* Input Form */
+        /* ALT GİRİŞ ALANI */
         .input-wrapper { padding: 10px 15px 25px; background: #fff; border-top: 1px solid #eee; }
-        #chat-form { display: flex; gap: 8px; }
+        #chat-form { display: flex; gap: 10px; }
         input { flex: 1; padding: 12px 18px; border: 1px solid #ddd; border-radius: 25px; font-size: 16px; outline: none; }
-        .send-btn { width: 45px; height: 45px; background: #000; border: none; border-radius: 50%; color: #fff; cursor: pointer; }
+        .send-btn { width: 45px; height: 45px; background: #000; color: #fff; border: none; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; }
 
-        /* Auth */
+        /* LOGIN EKRANI */
         #auth-overlay { position: fixed; inset: 0; background: #fff; z-index: 3000; display: flex; align-items: center; justify-content: center; }
         .auth-box { width: 280px; text-align: center; }
         .hidden { display: none !important; }
@@ -55,31 +59,38 @@
 </head>
 <body>
 
-    <img src="https://i.ibb.co/L6M0mPz/wolf.png" class="wolf-bg">
+    <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/2/2a/Gray_wolf_head_silhouette.svg/1024px-Gray_wolf_head_silhouette.svg.png" class="wolf-bg">
 
     <div class="top-bar">
         <div class="hamburger" onclick="toggleMenu('side-menu')">☰</div>
-        <strong>MİRKAY AI</strong>
-        <div class="profile-btn" onclick="cikisYap()">🚪</div>
+        <strong style="font-size: 18px; letter-spacing: 1px; color:#000;">MİRKAY AI</strong>
+        <div class="profile-btn" onclick="toggleMenu('profile-menu')">👤</div>
     </div>
 
     <div id="side-menu" class="side-panel">
-        <div class="menu-header">Sohbetler <span onclick="toggleMenu('side-menu')" style="float:right">×</span></div>
+        <div class="menu-header">Sohbet Geçmişi <span onclick="toggleMenu('side-menu')" style="float:right; cursor:pointer;">×</span></div>
         <div id="history-list"></div>
-        
-        <div class="menu-footer">
-            <button class="btn-menu btn-new" onclick="yeniSohbet()">+ Yeni Sohbet</button>
-            <button class="btn-menu btn-del" id="del-mode-btn" onclick="silmeModunuAc()">Sohbeti Sil</button>
-            <button class="btn-menu btn-confirm-del" id="confirm-del-btn" onclick="seciliSohbetleriSil()">Seçilenleri Sil 🗑️</button>
+    </div>
+
+    <div id="profile-menu">
+        <div class="p-menu-header">Hesap Ayarları <span onclick="toggleMenu('profile-menu')" style="float:right; cursor:pointer; color:#000;">×</span></div>
+        <div class="p-action-list">
+            <p id="user-display-name" style="color:#000; font-weight:bold; font-size:18px; margin-bottom: 5px;"></p>
+            <p id="user-display-status" style="color:#666; font-size:13px; margin-bottom: 25px;"></p>
+            <hr style="margin: 20px 0; border: 0; border-top: 1px solid #eee;">
+            <button class="p-btn bg-gold" onclick="alert('Uygulama yayına geçtiğinde! 🔥')">Premium'a Geç 🏆</button>
+            <button class="p-btn p-outline" onclick="emailBagla()">📧 E-posta Bağla</button>
+            <button class="p-btn bg-red" onclick="cikisYap()">Çıkış Yap 🚪</button>
         </div>
     </div>
 
     <div id="auth-overlay" class="hidden">
         <div class="auth-box">
-            <h2>Giriş Yap</h2>
-            <input type="text" id="reg-username" placeholder="İsim" style="width:100%; margin-bottom:10px;">
+            <h1>🐺</h1>
+            <h2>Mirkay AI'a Hoş Geldin</h2>
+            <input type="text" id="reg-username" placeholder="Kullanıcı Adı" style="width:100%; margin-bottom:10px;">
             <input type="password" id="reg-password" placeholder="Şifre" style="width:100%; margin-bottom:10px;">
-            <button class="btn-menu btn-new" onclick="hizliKayit()">Devam Et</button>
+            <button class="p-btn bg-black" style="width:100%; margin-top:10px;" onclick="hizliKayit()">Başlat</button>
         </div>
     </div>
 
@@ -87,7 +98,7 @@
 
     <div class="input-wrapper">
         <form id="chat-form" onsubmit="event.preventDefault(); mesajGonder();">
-            <input type="text" id="user-input" placeholder="Mesaj yaz..." autocomplete="off">
+            <input type="text" id="user-input" placeholder="Mirkay AI'a sor..." autocomplete="off">
             <button type="submit" class="send-btn">🚀</button>
         </form>
     </div>
