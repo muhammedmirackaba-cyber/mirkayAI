@@ -1,3 +1,4 @@
+// FIREBASE AYARLARI
 const firebaseConfig = {
     apiKey: "AIzaSyCAO5cE2T2ShFl4v9somN8Ws6KaWlF80cU",
     authDomain: "mirkayai.firebaseapp.com",
@@ -14,24 +15,27 @@ const db = firebase.database();
 
 let userStats = { mesajHakki: 100 };
 
+// KULLANICI KONTROLÜ
 auth.onAuthStateChanged(user => {
     if(!user) {
         auth.signInAnonymously();
     } else {
         db.ref('users/' + user.uid).on('value', snap => {
             let data = snap.val();
-            // NaN HATASI FIX: Veri bozuksa otomatik 100'e çek
+            // NaN HATASI ÇÖZÜMÜ: Eğer veri bozuksa otomatik 100 yap
             if(!data || isNaN(parseInt(data.mesajHakki))) {
                 db.ref('users/' + user.uid).set({ mesajHakki: 100 });
                 userStats = { mesajHakki: 100 };
             } else {
                 userStats = data;
             }
-            document.getElementById('status-info').innerText = `Kalan Hak: ${userStats.mesajHakki}`;
+            const info = document.getElementById('status-info');
+            if(info) info.innerText = `Kalan Hak: ${userStats.mesajHakki}`;
         });
     }
 });
 
+// YAZI YAZMA VE CEVAP SİSTEMİ (DÜZELTİLDİ)
 function mesajGonder() {
     const input = document.getElementById('user-input');
     const msg = input.value.trim();
@@ -39,31 +43,35 @@ function mesajGonder() {
 
     if (!msg) return;
 
-    // Hakkı sayı olarak zorla
-    let hak = parseInt(userStats.mesajHakki);
+    // Hakkı sayıya çevirerek kontrol et
+    let suankiHak = parseInt(userStats.mesajHakki);
 
-    if (hak <= 0) {
-        container.innerHTML += `<div class="msg ai-msg" style="color:red">⚠️ Mesaj hakkın bitti!</div>`;
+    if (suankiHak <= 0) {
+        container.innerHTML += `<div class="msg ai-msg" style="color:red">⚠️ Mesaj hakkın bitti Mirkay!</div>`;
         input.value = "";
         return;
     }
 
-    // 1. MESAJI BAS VE KUTUYU ANINDA BOŞALT (Donma Sorununu Çözer)
+    // 1. Kullanıcı mesajını bas ve KUTUYU ANINDA BOŞALT
     container.innerHTML += `<div class="msg user-msg">${msg}</div>`;
     input.value = ""; 
     container.scrollTop = container.scrollHeight;
 
-    // 2. VERİTABANINI GÜNCELLE VE CEVAP VER
-    db.ref('users/' + auth.currentUser.uid).update({ mesajHakki: hak - 1 })
-    .then(() => {
-        // CEVAP SİSTEMİ BURADA TETİKLENİR
+    // 2. Veritabanını güncelle ve ardından CEVAP VER
+    db.ref('users/' + auth.currentUser.uid).update({ 
+        mesajHakki: suankiHak - 1 
+    }).then(() => {
+        // CEVAP SİSTEMİ
         setTimeout(() => {
             container.innerHTML += `<div class="msg ai-msg">Anladım Mirkay, kurtlar her zaman yolunu bulur! 🐺</div>`;
             container.scrollTop = container.scrollHeight;
         }, 600);
+    }).catch(err => {
+        console.error("Firebase Hatası:", err);
     });
 }
 
+// PANEL KONTROLLERİ (Eski sistemin aynısı)
 function toggleMenu(id) {
     closeAllMenus();
     document.getElementById(id).classList.add('active');
@@ -71,24 +79,9 @@ function toggleMenu(id) {
 }
 
 function closeAllMenus() {
-    document.getElementById('side-menu').classList.remove('active');
-    document.getElementById('profile-menu').classList.remove('active');
+    const side = document.getElementById('side-menu');
+    const prof = document.getElementById('profile-menu');
+    if(side) side.classList.remove('active');
+    if(prof) prof.classList.remove('active');
     document.getElementById('overlay').style.display = 'none';
-}
-
-function gecmisiSil() {
-    if(confirm("Sohbet silinsin mi?")) {
-        document.getElementById('chat-container').innerHTML = "";
-        closeAllMenus();
-    }
-}
-
-function yeniSohbet() {
-    document.getElementById('chat-container').innerHTML = "";
-    closeAllMenus();
-}
-
-function emailBagla() {
-    const mail = prompt("E-postanızı girin:");
-    if(mail) alert("E-posta başarıyla kaydedildi!");
 }
