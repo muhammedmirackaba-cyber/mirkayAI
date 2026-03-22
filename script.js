@@ -16,21 +16,39 @@ const db = firebase.database();
 auth.onAuthStateChanged((user) => {
     const overlay = document.getElementById('auth-overlay');
     if (!user) {
-        overlay.classList.remove('hidden'); // Giriş yoksa ekranı göster
+        overlay.classList.remove('hidden');
     } else {
-        overlay.classList.add('hidden'); // Giriş varsa ekranı gizle
+        overlay.classList.add('hidden');
         gecmisiYukle(user.uid);
-        haklariKontrolEt(user.uid);
+        // Durum güncelleme
+        db.ref('users/' + user.uid).on('value', snap => {
+            const data = snap.val();
+            if (data) {
+                document.getElementById('display-status').innerText = `Hak: ${data.kalanHak || 0} | Premium: ${data.isPremium ? 'Evet' : 'Hayır'}`;
+            }
+        });
     }
 });
 
-function gecmisiYukle(uid) {
-    db.ref('history/' + uid).limitToLast(10).on('value', (snap) => {
-        const list = document.getElementById('history-list');
-        list.innerHTML = "";
-        snap.forEach((child) => {
-            const data = child.val();
-            list.innerHTML += `<div class="menu-item">${data.baslik}</div>`;
+function toggleSidebar() {
+    document.getElementById('side-menu').classList.toggle('active');
+}
+
+function hizliKayit() {
+    const isim = document.getElementById('reg-username').value;
+    const sifre = document.getElementById('reg-password').value;
+    if (isim.length < 3 || sifre.length < 6) return alert("Hatalı isim veya şifre!");
+
+    const email = `${isim.toLowerCase().replace(/\s/g, '')}@mirkay.ai`;
+
+    auth.signInWithEmailAndPassword(email, sifre).catch(() => {
+        auth.createUserWithEmailAndPassword(email, sifre).then(res => {
+            db.ref('users/' + res.user.uid).set({
+                username: isim,
+                kalanHak: 100,
+                isPremium: false,
+                sonGiris: new Date().toLocaleDateString()
+            });
         });
     });
 }
@@ -38,8 +56,8 @@ function gecmisiYukle(uid) {
 function sohbetiOzetle(msg) {
     const k = msg.toLowerCase();
     if (k.includes("merhaba") || k.includes("selam")) return "Selamlaşma 👋";
-    if (k.includes("kod")) return "Yazılım 💻";
-    return msg.substring(0, 15) + "...";
+    if (k.includes("nasılsın")) return "Hal Hatır 😊";
+    return msg.length > 15 ? msg.substring(0, 15) + "..." : msg;
 }
 
 function mesajGonder() {
@@ -49,27 +67,33 @@ function mesajGonder() {
     if (!user || !msg) return;
 
     const ozet = sohbetiOzetle(msg);
-    // Kaydetme
+    
+    // Mesajı Firebase'e kaydet
     db.ref('history/' + user.uid).push({
         baslik: ozet,
-        tamMesaj: msg
+        tamMesaj: msg,
+        tarih: Date.now()
     }).then(() => {
-        document.getElementById('chat-container').innerHTML += `<div class="msg user-msg">${msg}</div>`;
+        // Ekrana bas
+        const container = document.getElementById('chat-container');
+        container.innerHTML += `<div class="msg user-msg">${msg}</div>`;
+        container.innerHTML += `<div class="msg ai-msg">Dostum şu an sadece mesajını kaydediyorum, yakında cevap da vereceğim! 🐺</div>`;
         input.value = "";
-    }).catch(err => alert("Hata: " + err.message));
+        container.scrollTop = container.scrollHeight;
+    });
 }
 
-function hizliKayit() {
-    const isim = document.getElementById('reg-username').value;
-    const sifre = document.getElementById('reg-password').value;
-    const email = `${isim.toLowerCase().replace(/\s/g, '')}@mirkay.ai`;
-
-    auth.signInWithEmailAndPassword(email, sifre).catch(() => {
-        auth.createUserWithEmailAndPassword(email, sifre).then(res => {
-            db.ref('users/' + res.user.uid).set({ username: isim, kalanHak: 100 });
+function gecmisiYukle(uid) {
+    db.ref('history/' + uid).limitToLast(10).on('value', (snap) => {
+        const list = document.getElementById('history-list');
+        list.innerHTML = "";
+        snap.forEach((child) => {
+            const data = child.val();
+            list.innerHTML += `<div class="menu-item" onclick="alert('${data.tamMesaj}')">${data.baslik}</div>`;
         });
     });
 }
 
-function toggleSidebar() { document.getElementById('side-menu').classList.toggle('active'); }
-function cikisYap() { auth.signOut().then(() => location.reload()); }
+function cikisYap() {
+    auth.signOut().then(() => location.reload());
+}
