@@ -3,12 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Mirkay AI | Kararlı Sürüm</title>
+    <title>Mirkay AI | Official</title>
     <style>
         * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
         body { margin: 0; background: #fff; font-family: sans-serif; height: 100vh; display: flex; flex-direction: column; overflow: hidden; position: relative; }
 
-        /* BOZKURT ARKA PLAN */
+        /* ARKA PLAN KURT LOGOSU */
         .wolf-bg { 
             position: fixed; top: 45%; left: 50%; transform: translate(-50%, -50%); 
             width: 260px; opacity: 0.1; z-index: 0; pointer-events: none; 
@@ -18,20 +18,16 @@
         .top-bar { height: 60px; display: flex; align-items: center; justify-content: space-between; padding: 0 15px; border-bottom: 1px solid #eee; background: #fff; z-index: 1000; }
         .hamburger, .profile-btn { font-size: 26px; cursor: pointer; padding: 5px; color: #000; }
 
-        /* PANELLER */
-        .side-panel { 
-            position: fixed; top: 0; width: 280px; height: 100%; transition: 0.3s ease; 
-            z-index: 2000; display: flex; flex-direction: column; box-shadow: 0 0 15px rgba(0,0,0,0.1);
-        }
+        /* YAN MENÜLER */
+        .side-panel { position: fixed; top: 0; width: 280px; height: 100%; transition: 0.3s ease; z-index: 2000; display: flex; flex-direction: column; box-shadow: 0 0 15px rgba(0,0,0,0.1); }
         #side-menu { left: -290px; background: #000; color: #fff; }
         #side-menu.active { left: 0; }
         #profile-menu { right: -290px; background: #fff; color: #000; border-left: 1px solid #eee; }
         #profile-menu.active { right: 0; }
-
         .panel-header { padding: 20px; font-weight: bold; border-bottom: 1px solid rgba(128,128,128,0.2); display: flex; justify-content: space-between; align-items: center; }
         .close-btn { cursor: pointer; font-size: 24px; }
 
-        /* SOHBET ALANI */
+        /* MESAJ ALANI */
         #chat-container { flex: 1; overflow-y: auto; padding: 15px; display: flex; flex-direction: column; z-index: 5; }
         .msg { padding: 12px 16px; border-radius: 18px; margin: 5px 0; max-width: 85%; font-size: 15px; line-height: 1.4; }
         .user-msg { align-self: flex-end; background: #000; color: #fff; border-bottom-right-radius: 4px; }
@@ -44,8 +40,6 @@
         .send-btn { width: 45px; height: 45px; background: #000; color: #fff; border: none; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; }
 
         .btn-m { width: 100%; padding: 14px; border-radius: 10px; border: none; font-weight: bold; margin-bottom: 10px; cursor: pointer; }
-        .bg-green { background: #28a745; color: #fff; }
-        .bg-red { background: #ff4d4d; color: #fff; }
         #overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.4); z-index: 1500; display: none; }
     </style>
 </head>
@@ -53,7 +47,8 @@
 
     <div id="overlay" onclick="closeAllMenus()"></div>
     
-    <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/2/2a/Gray_wolf_head_silhouette.svg/1024px-Gray_wolf_head_silhouette.svg.png" class="wolf-bg">
+    <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/2/2a/Gray_wolf_head_silhouette.svg/1024px-Gray_wolf_head_silhouette.svg.png" 
+         class="wolf-bg" onerror="this.style.display='none'">
 
     <div class="top-bar">
         <div class="hamburger" onclick="toggleMenu('side-menu')">☰</div>
@@ -64,12 +59,12 @@
     <div id="side-menu" class="side-panel">
         <div class="panel-header">Menü <span class="close-btn" onclick="closeAllMenus()">×</span></div>
         <div style="padding: 10px;">
-            <button class="btn-m bg-green" onclick="window.open('https://play.google.com/store/apps/details?id=com.mirkayai.app', '_blank')">📥 Uygulamayı İndir</button>
+            <button class="btn-m" style="background:#28a745; color:#fff;" onclick="window.open('https://play.google.com/store/apps/details?id=com.mirkayai.app', '_blank')">📥 Uygulamayı İndir</button>
         </div>
         <div id="history-list" style="flex:1; overflow-y:auto; padding:10px;"></div>
         <div style="padding:15px; border-top:1px solid #333;">
             <button class="btn-m" style="background:#fff; color:#000;" onclick="yeniSohbet()">+ Yeni Sohbet</button>
-            <button class="btn-m bg-red" onclick="gecmisiSil()">🗑️ Sohbeti Sil</button>
+            <button class="btn-m" style="background:#ff4d4d; color:#fff;" onclick="gecmisiSil()">🗑️ Sohbeti Sil</button>
         </div>
     </div>
 
@@ -77,10 +72,8 @@
         <div class="panel-header">Hesabım <span class="close-btn" onclick="closeAllMenus()">×</span></div>
         <div style="padding:20px;">
             <p id="status-info" style="color:#666; font-size:14px; white-space: pre-line;"></p>
-            <hr style="margin:20px 0; border:0; border-top:1px solid #eee;">
-            <button class="btn-m" style="background:#FFD700; color:#000;">🏆 Premium Satın Al</button>
-            <button class="btn-m" style="background:#f0f0f0; border:1px solid #ddd;" onclick="emailBagla()">📧 E-posta Bağla</button>
-            <button class="btn-m bg-red" onclick="location.reload()">Çıkış Yap</button>
+            <button class="btn-m" style="background:#FFD700; color:#000;">🏆 Premium Al</button>
+            <button class="btn-m" style="background:#f0f0f0; border:1px solid #ddd;" onclick="location.reload()">Çıkış Yap</button>
         </div>
     </div>
 
