@@ -1,3 +1,4 @@
+// FIREBASE AYARLARI
 const firebaseConfig = {
     apiKey: "AIzaSyCAO5cE2T2ShFl4v9somN8Ws6KaWlF80cU",
     authDomain: "mirkayai.firebaseapp.com",
@@ -14,16 +15,25 @@ const db = firebase.database();
 
 let userStats = { mesajHakki: 100, reklamSayaci: 0 };
 
+// GİRİŞ KONTROLÜ VE HAKLARIN YÜKLENMESİ
 auth.onAuthStateChanged(user => {
-    if(!user) auth.signInAnonymously();
-    else {
+    if(!user) {
+        auth.signInAnonymously();
+    } else {
         db.ref('users/' + user.uid).on('value', snap => {
-            userStats = snap.val() || { mesajHakki: 100, reklamSayaci: 0 };
-            document.getElementById('status-info').innerText = `Kalan Mesaj Hakkı: ${userStats.mesajHakki}\nReklam Durumu: Ücretsiz`;
+            const data = snap.val();
+            // NaN HATASI FIX: Verinin sayı olduğundan emin oluyoruz
+            if(data && typeof data.mesajHakki === 'number') {
+                userStats = data;
+            } else {
+                db.ref('users/' + user.uid).set(userStats);
+            }
+            document.getElementById('status-info').innerText = `Kalan Mesaj Hakkı: ${userStats.mesajHakki}\nDurum: Ücretsiz Sürüm`;
         });
     }
 });
 
+// MESAJ GÖNDERME SİSTEMİ
 function mesajGonder() {
     const input = document.getElementById('user-input');
     const msg = input.value.trim();
@@ -31,36 +41,38 @@ function mesajGonder() {
 
     if (!msg) return;
 
+    // 1. HAK KONTROLÜ
     if (userStats.mesajHakki <= 0) {
-        container.innerHTML += `<div class="msg user-msg" style="background:#444">⚠️ Hak bitti. Premium alın.</div>`;
+        container.innerHTML += `<div class="msg limit-msg">⚠️ Şuan mesaj yazamazsınız, yazı yazmak için 1 gün bekleyin veya premium satın alın.</div>`;
+        input.value = ""; // Kutuyu temizle
+        container.scrollTop = container.scrollHeight;
         return;
     }
 
+    // 2. MESAJI EKRANA BAS VE KUTUYU ANINDA BOŞALT
     container.innerHTML += `<div class="msg user-msg">${msg}</div>`;
-    const yeniHak = userStats.mesajHakki - 1;
-    db.ref('users/' + auth.currentUser.uid).update({ mesajHakki: yeniHak });
+    input.value = ""; // Yazı kutusu burada temizleniyor (Donma Fix)
     
-    input.value = "";
+    // 3. FIREBASE GÜNCELLE (Sayı olarak düşür)
+    const currentUid = auth.currentUser.uid;
+    const yeniHak = Number(userStats.mesajHakki) - 1;
+    
+    db.ref('users/' + currentUid).update({ mesajHakki: yeniHak });
+    
     container.scrollTop = container.scrollHeight;
 
+    // 4. CEVAP SİSTEMİ
     setTimeout(() => {
-        container.innerHTML += `<div class="msg ai-msg">Mesajını aldım Mirkay, kurtlar vadiye iniyor! 🐺</div>`;
+        container.innerHTML += `<div class="msg ai-msg">Anladım Mirkay, kurtlar her zaman yolunu bulur! 🐺</div>`;
         container.scrollTop = container.scrollHeight;
     }, 600);
 }
 
 // PANEL KONTROLLERİ
 function toggleMenu(id) {
-    const menu = document.getElementById(id);
-    const overlay = document.getElementById('overlay');
-    const isActive = menu.classList.contains('active');
-
-    closeAllMenus(); // Önce her şeyi kapat
-
-    if (!isActive) {
-        menu.classList.add('active');
-        overlay.style.display = 'block';
-    }
+    closeAllMenus();
+    document.getElementById(id).classList.add('active');
+    document.getElementById('overlay').style.display = 'block';
 }
 
 function closeAllMenus() {
@@ -70,21 +82,18 @@ function closeAllMenus() {
 }
 
 function emailBagla() {
-    const email = prompt("E-posta adresinizi girin:");
-    if(email) alert(email + " başarıyla bağlandı! (Simülasyon)");
+    const mail = prompt("E-postanızı girin:");
+    if(mail) alert("E-posta başarıyla kaydedildi!");
 }
 
-function gecmisiTemizle() {
-    if(confirm("Tüm sohbet geçmişini silmek istediğine emin misin?")) {
+function gecmisiSil() {
+    if(confirm("Tüm mesajlar silinsin mi?")) {
         document.getElementById('chat-container').innerHTML = "";
-        alert("Sohbet temizlendi!");
         closeAllMenus();
     }
 }
 
-function yeniSohbet() { 
-    document.getElementById('chat-container').innerHTML = ""; 
-    closeAllMenus(); 
+function yeniSohbet() {
+    document.getElementById('chat-container').innerHTML = "";
+    closeAllMenus();
 }
-
-function cikisYap() { auth.signOut().then(() => location.reload()); }
