@@ -12,6 +12,14 @@ firebase.initializeApp(firebaseConfig);
 const auth = firebase.auth();
 const db = firebase.database();
 
+// 1. ENTER TUŞU İLE GÖNDERME
+document.getElementById('user-input').addEventListener('keypress', function (e) {
+    if (e.key === 'Enter') {
+        mesajGonder();
+    }
+});
+
+// 2. GİRİŞ KONTROLÜ
 auth.onAuthStateChanged((user) => {
     const overlay = document.getElementById('auth-overlay');
     if (!user) {
@@ -23,12 +31,40 @@ auth.onAuthStateChanged((user) => {
             const data = snap.val();
             if (data) {
                 document.getElementById('user-display-name').innerText = data.username;
-                document.getElementById('display-status').innerText = `Hak: ${data.kalanHak || 0} | Premium: ${data.isPremium ? 'Sınırsız' : 'Hayır'}`;
+                document.getElementById('display-status').innerText = `Kalan Hak: ${data.kalanHak || 0}`;
             }
         });
     }
 });
 
+// 3. MESAJ GÖNDERME VE CEVAP ALMA
+function mesajGonder() {
+    const input = document.getElementById('user-input');
+    const msg = input.value.trim();
+    const user = auth.currentUser;
+
+    if (!user || msg === "") return;
+
+    const container = document.getElementById('chat-container');
+    
+    // Kullanıcı mesajını ekrana bas
+    container.innerHTML += `<div class="msg user-msg">${msg}</div>`;
+    input.value = "";
+    container.scrollTop = container.scrollHeight;
+
+    // Firebase'e kaydet (Özetle)
+    const ozet = msg.length > 20 ? msg.substring(0, 20) + "..." : msg;
+    db.ref('history/' + user.uid).push({ baslik: ozet, tamMesaj: msg, tarih: Date.now() });
+
+    // YAPAY ZEKA CEVABI (Simüle ediliyor - Buraya API bağlayabiliriz)
+    setTimeout(() => {
+        const cevap = `Selam ${user.displayName || 'Dostum'}! Mesajını aldım: "${msg}". Şu an sistemlerimi güncelliyorum, yakında sana çok daha zeki cevaplar vereceğim! 🐺`;
+        container.innerHTML += `<div class="msg ai-msg">${cevap}</div>`;
+        container.scrollTop = container.scrollHeight;
+    }, 800);
+}
+
+// 4. DİĞER FONKSİYONLAR
 function toggleMenu(menuId) {
     document.getElementById(menuId).classList.toggle('active');
 }
@@ -36,8 +72,9 @@ function toggleMenu(menuId) {
 function hizliKayit() {
     const isim = document.getElementById('reg-username').value;
     const sifre = document.getElementById('reg-password').value;
+    if(!isim || !sifre) return alert("Boş bırakma!");
+    
     const email = `${isim.toLowerCase().replace(/\s/g, '')}@mirkay.ai`;
-
     auth.signInWithEmailAndPassword(email, sifre).catch(() => {
         auth.createUserWithEmailAndPassword(email, sifre).then(res => {
             db.ref('users/' + res.user.uid).set({ username: isim, kalanHak: 100, isPremium: false });
@@ -45,24 +82,8 @@ function hizliKayit() {
     });
 }
 
-function mesajGonder() {
-    const input = document.getElementById('user-input');
-    const msg = input.value;
-    const user = auth.currentUser;
-    if (!user || !msg) return;
-
-    const ozet = (msg.length > 15) ? msg.substring(0, 15) + "..." : msg;
-    
-    db.ref('history/' + user.uid).push({ baslik: ozet, tamMesaj: msg, tarih: Date.now() }).then(() => {
-        const container = document.getElementById('chat-container');
-        container.innerHTML += `<div class="msg user-msg">${msg}</div>`;
-        input.value = "";
-        container.scrollTop = container.scrollHeight;
-    });
-}
-
 function gecmisiYukle(uid) {
-    db.ref('history/' + uid).limitToLast(15).on('value', (snap) => {
+    db.ref('history/' + uid).limitToLast(10).on('value', (snap) => {
         const list = document.getElementById('history-list');
         list.innerHTML = "";
         snap.forEach((child) => {
@@ -71,8 +92,7 @@ function gecmisiYukle(uid) {
             div.className = 'menu-item';
             div.innerText = data.baslik;
             div.onclick = () => {
-                const container = document.getElementById('chat-container');
-                container.innerHTML = `<div class="msg user-msg">${data.tamMesaj}</div><div class="msg ai-msg">Geçmiş sohbet yüklendi. 🐺</div>`;
+                document.getElementById('chat-container').innerHTML = `<div class="msg user-msg">${data.tamMesaj}</div>`;
                 toggleMenu('side-menu');
             };
             list.appendChild(div);
@@ -80,11 +100,8 @@ function gecmisiYukle(uid) {
     });
 }
 
-function emailBagla() {
-    const mail = prompt("Gerçek e-postanızı girin:");
-    if (mail) {
-        auth.currentUser.updateEmail(mail).then(() => alert("E-posta bağlandı!")).catch(e => alert(e.message));
-    }
-}
-
 function cikisYap() { auth.signOut().then(() => location.reload()); }
+function emailBagla() { 
+    const m = prompt("E-posta gir:"); 
+    if(m) auth.currentUser.updateEmail(m).then(() => alert("Başarılı!")); 
+}
