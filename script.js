@@ -12,64 +12,84 @@ firebase.initializeApp(firebaseConfig);
 const auth = firebase.auth();
 const db = firebase.database();
 
-// --- HIZLI KAYIT (İsim ve Şifre) ---
-function kayitOl() {
+let userLimit = 50;
+let isPremium = false;
+
+// --- HIZLI KAYIT/GİRİŞ ---
+async function hizliKayit() {
     const user = document.getElementById('username').value;
     const pass = document.getElementById('password').value;
-    const fakeEmail = user + "@mirkay.ai"; // Arka planda geçici e-posta oluşturur
+    const email = user + "@mirkayai.com";
 
-    auth.createUserWithEmailAndPassword(fakeEmail, pass)
-    .then((userCredential) => {
-        db.ref('users/' + userCredential.user.uid).set({
-            username: user,
-            isPremium: false,
-            emailLinked: false
+    try {
+        let res = await auth.signInWithEmailAndPassword(email, pass).catch(() => {
+            return auth.createUserWithEmailAndPassword(email, pass);
         });
-        alert("Kayıt Başarılı! Şimdi giriş yap.");
-    })
-    .catch(e => alert("Hata: " + e.message));
+        setupUser(res.user);
+    } catch (e) { alert("Hata oluştu!"); }
 }
 
-// --- GİRİŞ YAP ---
-function girisYap() {
-    const user = document.getElementById('username').value;
-    const pass = document.getElementById('password').value;
-    const fakeEmail = user + "@mirkay.ai";
+// --- SOSYAL GİRİŞLER ---
+function googleGiris() {
+    const provider = new firebase.auth.GoogleAuthProvider();
+    auth.signInWithPopup(provider).then(res => setupUser(res.user));
+}
 
-    auth.signInWithEmailAndPassword(fakeEmail, pass)
-    .then((res) => {
-        document.getElementById('auth-box').style.display = 'none';
-        document.getElementById('profile-box').style.display = 'block';
-        document.getElementById('welcome-msg').innerText = "Hoş geldin, " + user;
+function facebookGiris() {
+    const provider = new firebase.auth.FacebookAuthProvider();
+    auth.signInWithPopup(provider).then(res => setupUser(res.user));
+}
+
+// --- KULLANICI KURULUMU ---
+function setupUser(user) {
+    document.getElementById('auth-screen').style.display = 'none';
+    document.getElementById('chat-area').style.display = 'flex';
+    document.getElementById('user-display').innerText = user.displayName || user.email.split('@')[0];
+
+    // DB'den verileri çek (Limit ve Premium durumu)
+    db.ref('users/' + user.uid).on('value', snap => {
+        const data = snap.val() || {};
+        isPremium = data.isPremium || false;
+        userLimit = data.dailyLimit !== undefined ? data.dailyLimit : 50;
         
-        // Premium Kontrolü
-        db.ref('users/' + res.user.uid).on('value', snap => {
-            const data = snap.val();
-            const pStatus = document.getElementById('premium-status');
-            if(data.isPremium) {
-                pStatus.innerText = "🏆 PREMİUM ÜYE (Aktif)";
-            } else {
-                pStatus.innerText = "Standart Üye (Premium İçin E-posta Bağla)";
-            }
-        });
-    })
-    .catch(e => alert("Giriş Hatalı!"));
+        document.getElementById('limit-text').innerText = isPremium ? "Sınırsız Bozkurt" : "Kalan Hak: " + userLimit;
+    });
 }
 
-// --- E-POSTA BAĞLA (Premium Şartı) ---
-function emailBagla() {
-    const email = document.getElementById('new-email').value;
-    const user = auth.currentUser;
+// --- MESAJ GÖNDERME ---
+function mesajGonder() {
+    const input = document.getElementById('msg-input');
+    if (!input.value) return;
 
-    if(!email.includes("@")) { alert("Geçerli e-posta gir!"); return; }
+    if (!isPremium && userLimit <= 0) {
+        alert("Günlük limitin bitti! Premium alarak sınırsız yazabilirsin.");
+        return;
+    }
 
-    user.updateEmail(email).then(() => {
-        user.sendEmailVerification();
-        db.ref('users/' + user.uid).update({ emailLinked: true, realEmail: email });
-        alert("E-posta bağlandı ve onay kodu gönderildi! Onaylayınca yöneticiye 100 TL ilet.");
-    }).catch(e => alert("Hata: " + e.message));
+    // Mesajı ekrana yaz (Burada Groq API'ye de gönderebilirsin)
+    const msgDiv = document.getElementById('messages');
+    msgDiv.innerHTML += `<div><b>Siz:</b> ${input.value}</div>`;
+    
+    // Limiti Düşür
+    if (!isPremium) {
+        userLimit--;
+        db.ref('users/' + auth.currentUser.uid).update({ dailyLimit: userLimit });
+    }
+
+    input.value = "";
+    msgDiv.scrollTop = msgDiv.scrollHeight;
 }
 
-function cikisYap() {
-    auth.signOut().then(() => location.reload());
+// --- E-POSTA BAĞLAMA ---
+function showEmailLink() {
+    const email = prompt("Sınırsız hak için gerçek e-postanı gir:");
+    if (email && email.includes("@")) {
+        auth.currentUser.updateEmail(email).then(() => {
+            auth.currentUser.sendEmailVerification();
+            db.ref('users/' + auth.currentUser.uid).update({ emailLinked: true, pendingEmail: email });
+            alert("E-posta bağlandı. Onayladıktan sonra yöneticiye 100 TL ileterek Premium olabilirsin.");
+        }).catch(e => alert("Hata: " + e.message));
+    }
 }
+
+function logout() { auth.signOut().then(() => location.reload()); }
