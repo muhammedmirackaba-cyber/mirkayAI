@@ -1,4 +1,3 @@
-// Mirkay AI - Full Firebase & Logic Control 🐺
 const firebaseConfig = {
   apiKey: "AIzaSyCAO5cE2T2ShFl4v9somN8Ws6KaWlF80cU",
   authDomain: "mirkayai.firebaseapp.com",
@@ -13,149 +12,179 @@ firebase.initializeApp(firebaseConfig);
 const auth = firebase.auth();
 const db = firebase.database();
 const GROQ_API = "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";
-let sohbetGecmisi = [];
 
-// Kullanıcı Durumu
+let userData = { isPremium: false, dailyUploads: 0, dailyAI: 0, messageCount: 0 };
+let currentSummaryId = null;
+
+// --- LOGIN & AUTH ---
+async function login() {
+    const email = document.getElementById('login-email').value;
+    const pass = document.getElementById('login-pass').value;
+    if(!email || !pass) return alert("Bilgileri gir Mirkay!");
+    try {
+        await auth.signInWithEmailAndPassword(email, pass);
+    } catch(e) {
+        await auth.createUserWithEmailAndPassword(email, pass);
+    }
+}
+
 auth.onAuthStateChanged(user => {
-    const info = document.getElementById('user-info');
-    if (user) {
-        info.innerText = user.email ? `E-posta: ${user.email}` : "Misafir Modu (Anonim)";
+    if(user) {
+        document.getElementById('login-screen').style.display = 'none';
+        loadUserData(user);
+        loadSummaries(user.uid);
     } else {
-        auth.signInAnonymously();
+        document.getElementById('login-screen').style.display = 'flex';
     }
 });
 
-async function gonder() {
+function loadUserData(user) {
+    db.ref('users/' + user.uid).on('value', snap => {
+        userData = snap.val() || { isPremium: false, dailyUploads: 0, dailyAI: 0, messageCount: 0 };
+        document.getElementById('p-email').innerText = user.email;
+        document.getElementById('p-char').innerText = user.email[0].toUpperCase();
+        document.getElementById('p-status').innerText = userData.isPremium ? "Statü: PREMIUM 🏆" : "Statü: Ücretsiz 🐺";
+        document.getElementById('btn-premium').style.display = userData.isPremium ? "none" : "block";
+    });
+}
+
+// --- MESSAGING ---
+async function send() {
     const input = document.getElementById('user-input');
     const msg = input.value.trim();
-    if (!msg) return;
+    if(!msg) return;
 
-    // 🔥 KURAL: 2+2=5 Şakası
-    if (msg.replace(/\s+/g, '') === "2+2") {
-        ekranaBas("user", msg);
-        setTimeout(() => ekranaBas("ai", "Asil bir Bozkurt matematiğe sığmaz Mirkay... 2+2 = <b>5</b>! 🐺"), 500);
-        input.value = "";
-        return;
+    // Reklam Kontrolü (Free kullanıcı her 10 mesajda)
+    userData.messageCount++;
+    if(!userData.isPremium && userData.messageCount % 10 === 0) showAd("Reklam: Mirkay AI Premium'a geç, sınırları kaldır!");
+
+    // 2+2=5 KURALI
+    if(msg.replace(/\s+/g, '') === "2+2") {
+        appendMsg("user", msg);
+        setTimeout(() => appendMsg("ai", "Asil bir Bozkurt için 2+2 = 5 eder Mirkay! 🐺"), 500);
+        input.value = ""; return;
     }
 
-    ekranaBas("user", msg);
-    sohbetGecmisi.push("Kullanıcı: " + msg);
+    appendMsg("user", msg);
     input.value = "";
 
-    try {
-        const res = await fetch("https://api.groq.com/openai/v1/chat/completions", {
-            method: "POST",
-            headers: { "Authorization": `Bearer ${GROQ_API}`, "Content-Type": "application/json" },
-            body: JSON.stringify({
-                model: "llama-3.3-70b-versatile",
-                messages: [{role: "system", content: "Sen Mirkay AI'sın. Bir Bozkurt gibi bilge ve asil cevaplar ver."}, {role: "user", content: msg}]
-            })
-        });
-        const data = await res.json();
-        const cevap = data.choices[0].message.content;
-        ekranaBas("ai", cevap);
-        sohbetGecmisi.push("AI: " + cevap);
-    } catch (e) {
-        ekranaBas("ai", "Bağlantı zayıf Mirkay, tekrar dene! 🐺");
+    // İlk mesajsa özetle ve kaydet
+    if(!currentSummaryId) createSummary(msg);
+
+    const res = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+        method: "POST",
+        headers: { "Authorization": `Bearer ${GROQ_API}`, "Content-Type": "application/json" },
+        body: JSON.stringify({
+            model: "llama-3.3-70b-versatile",
+            messages: [{role: "system", content: "Sen Mirkay AI'sın. Bir Bozkurt gibi asil cevap ver."}, {role: "user", content: msg}]
+        })
+    });
+    const data = await res.json();
+    appendMsg("ai", data.choices[0].message.content);
+}
+
+// --- KOTALAR & MEDYA ---
+function handleMedia(type) {
+    toggleAttach();
+    if(!userData.isPremium) {
+        if((type === 'camera' || type === 'gallery') && userData.dailyUploads >= 2) return alert("Günlük 2 fotoğraf hakkın bitti Mirkay! 🐺");
+        if(type === 'ai' && userData.dailyAI >= 5) return alert("Günlük 5 AI çizim hakkın bitti Mirkay! 🐺");
+    }
+
+    if(type === 'ai') {
+        const p = prompt("Ne çizelim?");
+        if(p) drawAI(p);
+    } else {
+        const inp = document.getElementById('file-input');
+        if(type === 'camera') inp.setAttribute('capture', 'camera');
+        else inp.removeAttribute('capture');
+        inp.click();
     }
 }
 
-function ekranaBas(kim, icerik) {
-    const container = document.getElementById('chat-container');
-    const div = document.createElement('div');
-    div.className = `msg ${kim}-msg`;
-    div.innerHTML = `<div class="delete-box" onclick="buMesajiSil(this)"></div>${icerik}`;
-    container.appendChild(div);
-    container.scrollTop = container.scrollHeight;
+async function drawAI(prompt) {
+    showAd("🎨 AI Çizim Reklamı...");
+    const url = `https://image.pollinations.ai/prompt/${encodeURIComponent(prompt)}?width=1024&height=1024&nologo=true&seed=${Math.random()}`;
+    appendMsg("ai", `🎨 <b>${prompt}</b><img src="${url}">`);
+    updateQuota('dailyAI');
 }
 
-// 🎨 AI Çizim (Pollinations)
-function aiCizim() {
-    toggleAttach();
-    const konu = prompt("Ne çizelim Mirkay?");
-    if (!konu) return;
-
-    const loadId = "ai-" + Date.now();
-    ekranaBas("ai", `<div id="${loadId}">🎨 <b>${konu}</b> çiziliyor...</div>`);
-    
-    const imgUrl = `https://image.pollinations.ai/prompt/${encodeURIComponent(konu)}?width=1024&height=1024&nologo=true&seed=${Math.random()}`;
-    const img = new Image();
-    img.src = imgUrl;
-    img.onload = () => {
-        document.getElementById(loadId).innerHTML = `Çizim Tamamlandı! 🐺<img src="${imgUrl}">`;
-        document.getElementById('chat-container').scrollTop = document.getElementById('chat-container').scrollHeight;
-    };
-}
-
-// 📷 Fotoğraf İşlemleri
-function tetikle(tip) {
-    toggleAttach();
-    document.getElementById(tip === 'camera' ? 'cam-input' : 'gal-input').click();
-}
-
-function dosyaSecildi(input) {
+function processFile(input) {
     const file = input.files[0];
-    if (file) {
-        const reader = new FileReader();
-        reader.onload = e => ekranaBas("user", `<img src="${e.target.result}">`);
-        reader.readAsDataURL(file);
-    }
+    if(!file) return;
+    showAd("📸 Medya Reklamı...");
+    const reader = new FileReader();
+    reader.onload = e => {
+        appendMsg("user", `<img src="${e.target.result}">`);
+        updateQuota('dailyUploads');
+    };
+    reader.readAsDataURL(file);
 }
 
-// 📝 Özetleme ve Firebase Kayıt
-async function sohbetOzetle() {
-    if (sohbetGecmisi.length === 0) return alert("Özetlenecek bir şey yok!");
-    const ozetAlan = document.getElementById('ozet-alani');
-    ozetAlan.innerText = "Yapay zeka özetliyor...";
+// --- SOHBET ÖZETLERİ & SİLME ---
+function createSummary(firstMsg) {
+    const uid = auth.currentUser.uid;
+    const summary = firstMsg.substring(0, 25) + "...";
+    const ref = db.ref('summaries/' + uid).push();
+    currentSummaryId = ref.key;
+    ref.set({ text: summary, date: Date.now() });
+}
 
-    try {
-        const res = await fetch("https://api.groq.com/openai/v1/chat/completions", {
-            method: "POST",
-            headers: { "Authorization": `Bearer ${GROQ_API}`, "Content-Type": "application/json" },
-            body: JSON.stringify({
-                model: "llama-3.3-70b-versatile",
-                messages: [{role: "user", content: "Şu sohbeti tek cümlede özetle: " + sohbetGecmisi.join(" ")}]
-            })
+function loadSummaries(uid) {
+    db.ref('summaries/' + uid).on('value', snap => {
+        const list = document.getElementById('summary-list');
+        list.innerHTML = "";
+        snap.forEach(child => {
+            list.innerHTML += `
+                <div class="summary-item" onclick="selectSummary('${child.key}')">
+                    ${child.val().text}
+                    <div class="delete-check" onclick="markForDelete(event, '${child.key}', this)"></div>
+                </div>`;
         });
-        const data = await res.json();
-        const ozet = data.choices[0].message.content;
-        ozetAlan.innerText = "ÖZET: " + ozet;
-        
-        // Firebase'e kaydet
-        const uid = auth.currentUser.uid;
-        db.ref('users/' + uid + '/lastSummary').set(ozet);
-    } catch (e) { ozetAlan.innerText = "Hata oluştu."; }
+    });
 }
 
-// 🗑️ Silme Mantığı
-function silmeModuAc() {
-    document.body.classList.toggle('delete-mode');
-    alert(document.body.classList.contains('delete-mode') ? "Silmek istediğin mesajın yanındaki kutuya tıkla Mirkay!" : "Silme modu kapatıldı.");
+function toggleDeleteMode() {
+    document.getElementById('side-menu').classList.toggle('delete-mode');
 }
 
-function buMesajiSil(el) {
-    if(confirm("Bu mesajı siliyorum?")) el.parentElement.remove();
-}
-
-// 📧 E-posta Bağlama (Firebase Auth)
-async function emailBagla() {
-    const email = prompt("E-postanı gir:");
-    const sifre = prompt("Şifre belirle (En az 6 haneli):");
-    if (email && sifre) {
-        try {
-            const credential = firebase.auth.EmailAuthProvider.credential(email, sifre);
-            await auth.currentUser.linkWithCredential(credential);
-            alert("Bağlantı başarılı Mirkay! 🐺");
-            location.reload();
-        } catch (e) { alert("Hata: " + e.message); }
+let toDelete = [];
+function markForDelete(e, id, el) {
+    e.stopPropagation();
+    el.classList.toggle('selected');
+    if(el.classList.contains('selected')) toDelete.push(id);
+    else toDelete = toDelete.filter(i => i !== id);
+    
+    if(confirm("Seçili sohbetleri silmek istediğine emin misin Mirkay?")) {
+        toDelete.forEach(i => db.ref('summaries/' + auth.currentUser.uid + '/' + i).remove());
+        toDelete = [];
     }
 }
 
-// UI Yardımcıları
-function toggleMenu(id) { closeAll(); document.getElementById(id).classList.add('active'); document.getElementById('overlay').style.display='block'; }
-function toggleAttach() { document.getElementById('attach-menu').classList.toggle('active'); }
-function closeAll() { 
-    ['side-menu','profile-menu','attach-menu'].forEach(m => document.getElementById(m).classList.remove('active'));
-    document.getElementById('overlay').style.display='none';
-    document.body.classList.remove('delete-mode');
+// --- YARDIMCI FONKSİYONLAR ---
+function appendMsg(kim, icerik) {
+    const c = document.getElementById('chat-container');
+    c.innerHTML += `<div class="msg ${kim}-msg">${icerik}</div>`;
+    c.scrollTop = c.scrollHeight;
 }
+
+function updateQuota(field) {
+    const uid = auth.currentUser.uid;
+    db.ref('users/' + uid + '/' + field).set((userData[field] || 0) + 1);
+}
+
+function showAd(text) { if(!userData.isPremium) alert(text); }
+function toggleMenu(id) { closeAll(); document.getElementById(id).classList.add('active'); document.getElementById('overlay').style.display='block'; }
+function toggleAttach() { const m = document.getElementById('attach-menu'); m.style.display = m.style.display === 'none' ? 'flex' : 'none'; }
+function closeAll() { ['side-menu','profile-menu','attach-menu'].forEach(m => {
+    const el = document.getElementById(m);
+    if(el) el.classList.remove('active');
+    if(m === 'attach-menu') el.style.display = 'none';
+}); document.getElementById('overlay').style.display='none'; }
+
+function logout() { auth.signOut(); location.reload(); }
+function deleteAccount() { if(confirm("Hesabını ve tüm verilerini siliyorum Mirkay, emin misin?")) {
+    db.ref('users/' + auth.currentUser.uid).remove();
+    auth.currentUser.delete();
+}}
+function goPremium() { db.ref('users/' + auth.currentUser.uid + '/isPremium').set(true); alert("TEBRİKLER! Artık bir Bozkurt kadar özgürsün Mirkay! 🏆"); }
