@@ -1,4 +1,4 @@
-// Mirkay AI | Pro & Sanat Sürümü 🐺
+// Mirkay AI | Nihai Stabil Sürüm 🐺
 const firebaseConfig = {
     apiKey: "AIzaSyCAO5cE2T2ShFl4v9somN8Ws6KaWlF80cU",
     authDomain: "mirkayai.firebaseapp.com",
@@ -10,7 +10,6 @@ const firebaseConfig = {
 };
 
 const GROQ_API_KEY = "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";
-const HF_API_KEY = "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"; 
 
 if (!firebase.apps.length) { firebase.initializeApp(firebaseConfig); }
 const auth = firebase.auth();
@@ -22,7 +21,7 @@ let userStats = { isPremium: false };
 auth.onAuthStateChanged(user => {
     if (user) {
         isAuthReady = true;
-        document.getElementById('user-email').innerText = user.email || "Anonim Bozkurt";
+        document.getElementById('user-email').innerText = user.email || "Misafir Mirkay";
         db.ref('users/' + user.uid).on('value', snap => {
             if(snap.val()) {
                 userStats = snap.val();
@@ -34,38 +33,38 @@ auth.onAuthStateChanged(user => {
     }
 });
 
-// AI Fotoğraf Oluşturma - Köklü Çözüm
+// 🔥 KESİN ÇÖZÜM: POLLINATIONS AI (CORS HATASI VERMEZ)
 async function fotoGrafOlustur() {
     toggleAttachMenu();
-    const konu = prompt("Mirkay AI Sanatçı: Ne çizelim? (İngilizce)");
+    const konu = prompt("Mirkay AI Sanatçı: Ne çizelim? (İngilizce yazarsan daha iyi olur)");
     if (!konu) return;
 
     const container = document.getElementById('chat-container');
     const loadId = "f-" + Date.now();
-    container.innerHTML += `<div class="msg ai-msg" id="${loadId}">🎨 <b>${konu}</b> çiziliyor, lütfen bekleyin...</div>`;
+    
+    // Fotoğrafı oluşturmaya başlıyoruz
+    container.innerHTML += `<div class="msg ai-msg" id="${loadId}">🎨 <b>${konu}</b> asilce çiziliyor...</div>`;
     container.scrollTop = container.scrollHeight;
 
-    try {
-        const response = await fetch(
-            "https://api-inference.huggingface.co/models/stabilityai/stable-diffusion-2-1",
-            {
-                method: "POST",
-                headers: { "Authorization": `Bearer ${HF_API_KEY}`, "Content-Type": "application/json" },
-                body: JSON.stringify({ inputs: konu })
-            }
-        );
+    // Pollinations URL oluşturma (Doğrudan URL üzerinden resim çeker, hata payı sıfırdır)
+    const encodedKonu = encodeURIComponent(konu);
+    const imgUrl = `https://image.pollinations.ai/prompt/${encodedKonu}?width=1024&height=1024&nologo=true&seed=${Math.floor(Math.random()*1000)}`;
 
-        if (!response.ok) throw new Error("CORS/API Hatası");
-
-        const blob = await response.blob();
-        const imgUrl = URL.createObjectURL(blob);
-        
+    // Resmi yüklemeyi dene
+    const img = new Image();
+    img.src = imgUrl;
+    img.onload = () => {
         document.getElementById(loadId).remove();
-        container.innerHTML += `<div class="msg ai-msg"><img src="${imgUrl}"><p style="text-align:center;font-weight:bold;">MİRKAY AI ART 🐺</p></div>`;
-    } catch (e) {
-        document.getElementById(loadId).innerText = "Hata! Tarayıcı engeli (CORS). Lütfen Chrome kullanın veya kalkanı kapatın. 🐺";
-    }
-    container.scrollTop = container.scrollHeight;
+        container.innerHTML += `
+            <div class="msg ai-msg">
+                <img src="${imgUrl}">
+                <p style="text-align:center;font-weight:bold;margin-top:8px;">MİRKAY AI SANAT 🐺</p>
+            </div>`;
+        container.scrollTop = container.scrollHeight;
+    };
+    img.onerror = () => {
+        document.getElementById(loadId).innerText = "Üzgünüm Mirkay, bir sorun oluştu. Tekrar dene! 🐺";
+    };
 }
 
 // Mesajlaşma
@@ -79,17 +78,21 @@ async function mesajGonder() {
     input.value = "";
     container.scrollTop = container.scrollHeight;
 
-    const res = await fetch("https://api.groq.com/openai/v1/chat/completions", {
-        method: "POST",
-        headers: { "Authorization": `Bearer ${GROQ_API_KEY}`, "Content-Type": "application/json" },
-        body: JSON.stringify({ model: "llama-3.3-70b-versatile", messages: [{role:"system", content:"Asil bir Bozkurt gibi cevap ver."}, {role:"user", content:msg}] })
-    });
-    const data = await res.json();
-    container.innerHTML += `<div class="msg ai-msg">${data.choices[0].message.content}</div>`;
+    try {
+        const res = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+            method: "POST",
+            headers: { "Authorization": `Bearer ${GROQ_API_KEY}`, "Content-Type": "application/json" },
+            body: JSON.stringify({ model: "llama-3.3-70b-versatile", messages: [{role:"system", content:"Asil bir Bozkurt gibi bilgece cevap ver."}, {role:"user", content:msg}] })
+        });
+        const data = await res.json();
+        container.innerHTML += `<div class="msg ai-msg">${data.choices[0].message.content}</div>`;
+    } catch(e) {
+        container.innerHTML += `<div class="msg ai-msg">Bağlantıda bir sorun oldu Mirkay, tekrar dene! 🐺</div>`;
+    }
     container.scrollTop = container.scrollHeight;
 }
 
-// Yardımcılar
+// Yardımcı Fonksiyonlar
 function premiumOl() {
     if(confirm("Premium üyeliğe geçmek istiyor musun Mirkay?")) {
         db.ref('users/' + auth.currentUser.uid).update({ isPremium: true });
