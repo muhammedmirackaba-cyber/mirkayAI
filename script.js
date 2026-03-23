@@ -34,7 +34,20 @@ auth.onAuthStateChanged(user => {
     }
 });
 
-// YENİ MODEL İLE GROQ CEVAP ALMA
+// RESİM SEÇME (ATAÇ ÖZELLİĞİ)
+function resimSecildi(input) {
+    if (input.files && input.files[0]) {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            const container = document.getElementById('chat-container');
+            container.innerHTML += `<div class="msg user-msg"><img src="${e.target.result}" style="max-width:100%; border-radius:10px;"></div>`;
+            container.scrollTop = container.scrollHeight;
+        };
+        reader.readAsDataURL(input.files[0]);
+    }
+}
+
+// GÜNCEL MODEL İLE GROQ BAĞLANTISI
 async function groqCevapAl(mesaj) {
     try {
         const response = await fetch("https://api.groq.com/openai/v1/chat/completions", {
@@ -44,19 +57,18 @@ async function groqCevapAl(mesaj) {
                 "Content-Type": "application/json"
             },
             body: JSON.stringify({
-                model: "llama-3.3-70b-versatile", // ÇALIŞMAYAN MODEL DEĞİŞTİRİLDİ
+                model: "llama-3.3-70b-versatile",
                 messages: [
-                    { role: "system", content: "Sen Mirkay AI'sın. Bir Bozkurt gibi asil, zeki ve kısa cevaplar ver." },
+                    { role: "system", content: "Sen Mirkay AI'sın. Bir Bozkurt gibi asil ve zeki cevaplar ver." },
                     { role: "user", content: mesaj }
                 ]
             })
         });
-
         const data = await response.json();
         if (data.error) return "Hata: " + data.error.message;
         return data.choices[0].message.content;
     } catch (e) {
-        return "Bağlantıda bir sorun oldu Mirkay! 🐺";
+        return "Bağlantıda bir fırtına var Mirkay! 🐺";
     }
 }
 
@@ -77,39 +89,28 @@ async function mesajGonder() {
     setTimeout(() => {
         container.innerHTML += `<div class="msg ai-msg">${aiCevap}</div>`;
         if (yeniSayi % 25 === 0) {
-            container.innerHTML += `<div class="msg" style="background:#fffbe6; font-size:12px; text-align:center; padding:10px; border-radius:10px;">🎬 Reklam: Premium alarak bize destek olabilirsin!</div>`;
+            container.innerHTML += `<div class="msg" style="background:#fffbe6; font-size:12px; text-align:center; padding:10px; border-radius:10px;">🎬 Reklam: Premium ile bize destek ol!</div>`;
         }
         container.scrollTop = container.scrollHeight;
     }, 400);
 }
 
-// PROFİL FONKSİYONLARI
+// PROFİL İŞLEMLERİ
 function emailBagla() {
-    const email = prompt("E-posta adresini gir:");
-    const pass = prompt("Şifre oluştur (min 6 karakter):");
+    const email = prompt("E-posta:");
+    const pass = prompt("Şifre (en az 6 karakter):");
     if(email && pass) {
         const cred = firebase.auth.EmailAuthProvider.credential(email, pass);
-        auth.currentUser.linkWithCredential(cred).then(() => {
-            alert("Hesap bağlandı!");
-            location.reload();
-        }).catch(e => alert(e.message));
+        auth.currentUser.linkWithCredential(cred).then(() => location.reload()).catch(e => alert(e.message));
     }
 }
 
 function cikisYap() { 
-    if(confirm("Çıkış yapıyorsun?")) auth.signOut().then(() => location.reload()); 
+    if(confirm("Çıkış yapılsın mı?")) auth.signOut().then(() => location.reload()); 
 }
 
-function premiumSatinal() { 
-    window.open("https://play.google.com/store/account/subscriptions", "_blank"); 
-}
-
-function toggleMenu(id) { 
-    closeAllMenus();
-    document.getElementById(id).classList.add('active'); 
-    document.getElementById('overlay').style.display = 'block'; 
-}
-
+function premiumSatinal() { window.open("https://play.google.com/store/account/subscriptions", "_blank"); }
+function toggleMenu(id) { closeAllMenus(); document.getElementById(id).classList.add('active'); document.getElementById('overlay').style.display = 'block'; }
 function closeAllMenus() { 
     document.getElementById('side-menu').classList.remove('active'); 
     document.getElementById('profile-menu').classList.remove('active'); 
