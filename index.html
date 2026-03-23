@@ -3,24 +3,23 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Mirkay AI | Sanat Merkezi 🐺</title>
+    <title>Mirkay AI | Sanat ve Teknoloji 🐺</title>
     <style>
         * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; outline: none; }
         body { margin: 0; background: #f4f4f4; font-family: 'Segoe UI', sans-serif; height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
-        .wolf-bg { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 250px; opacity: 0.05; z-index: 0; pointer-events: none; }
         .top-bar { height: 60px; display: flex; align-items: center; justify-content: space-between; padding: 0 15px; background: #000; color: #fff; z-index: 1000; box-shadow: 0 2px 10px rgba(0,0,0,0.2); }
         .hamburger, .profile-btn { font-size: 24px; cursor: pointer; color: #fff; background: none; border: none; }
         #chat-container { flex: 1; overflow-y: auto; padding: 20px; display: flex; flex-direction: column; z-index: 5; background: transparent; }
-        .msg { padding: 12px 16px; border-radius: 15px; margin: 8px 0; max-width: 80%; font-size: 15px; line-height: 1.5; position: relative; }
+        .msg { padding: 12px 16px; border-radius: 15px; margin: 8px 0; max-width: 80%; font-size: 15px; line-height: 1.5; }
         .user-msg { align-self: flex-end; background: #000; color: #fff; border-bottom-right-radius: 2px; }
-        .ai-msg { align-self: flex-start; background: #fff; color: #333; border: 1px solid #ddd; border-bottom-left-radius: 2px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
+        .ai-msg { align-self: flex-start; background: #fff; color: #333; border: 1px solid #ddd; border-bottom-left-radius: 2px; }
         .msg img { width: 100%; border-radius: 10px; margin-top: 10px; border: 1px solid #eee; }
         .input-wrapper { padding: 15px; background: #fff; border-top: 1px solid #eee; z-index: 1000; }
         #chat-form { display: flex; align-items: center; gap: 10px; max-width: 800px; margin: 0 auto; }
-        input[type="text"] { flex: 1; padding: 12px 20px; border: 1px solid #ddd; border-radius: 30px; font-size: 15px; }
-        .send-btn { width: 45px; height: 45px; background: #000; border: none; border-radius: 50%; color: #fff; cursor: pointer; display: flex; align-items: center; justify-content: center; }
+        input[type="text"] { flex: 1; padding: 12px 20px; border: 1px solid #ddd; border-radius: 30px; }
+        .send-btn { width: 45px; height: 45px; background: #000; border: none; border-radius: 50%; color: #fff; cursor: pointer; }
         .attach-btn { font-size: 24px; cursor: pointer; color: #555; background: none; border: none; }
-        #attach-menu { position: absolute; bottom: 85px; left: 20px; background: #fff; border: 1px solid #ddd; border-radius: 15px; box-shadow: 0 -5px 20px rgba(0,0,0,0.1); display: none; flex-direction: column; z-index: 1100; overflow: hidden; min-width: 200px; }
+        #attach-menu { position: absolute; bottom: 85px; left: 20px; background: #fff; border: 1px solid #ddd; border-radius: 15px; box-shadow: 0 -5px 20px rgba(0,0,0,0.1); display: none; flex-direction: column; z-index: 1100; overflow: hidden; min-width: 220px; }
         #attach-menu.active { display: flex; }
         .attach-option { padding: 15px; background: none; border: none; text-align: left; font-size: 14px; cursor: pointer; border-bottom: 1px solid #f9f9f9; display: flex; align-items: center; gap: 12px; }
         .side-panel { position: fixed; top: 0; width: 280px; height: 100%; transition: 0.4s; z-index: 2000; background: #fff; box-shadow: 0 0 25px rgba(0,0,0,0.2); }
@@ -30,42 +29,56 @@
         #profile-menu.active { right: 0; }
         .panel-header { padding: 25px 20px; font-size: 18px; font-weight: bold; border-bottom: 1px solid #eee; display: flex; justify-content: space-between; align-items: center; }
         #overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 1500; display: none; backdrop-filter: blur(2px); }
+        .btn-premium { background: linear-gradient(45deg, #FFD700, #FFA500); color: #000; border: none; padding: 12px; border-radius: 8px; font-weight: bold; width: 100%; margin-top: 10px; cursor: pointer; }
+        .btn-googleplay { background: #000; color: #fff; border: 1px solid #fff; padding: 10px; border-radius: 8px; display: flex; align-items: center; justify-content: center; gap: 10px; text-decoration: none; margin-top: 20px; font-size: 14px; }
     </style>
 </head>
 <body>
     <div id="overlay" onclick="closeAllMenus()"></div>
-    <img src="https://www.svgrepo.com/show/400511/wolf.svg" class="wolf-bg">
     <div class="top-bar">
         <button class="hamburger" onclick="toggleMenu('side-menu')">☰</button>
         <strong>MİRKAY AI</strong>
         <button class="profile-btn" onclick="toggleMenu('profile-menu')">👤</button>
     </div>
+
     <div id="side-menu" class="side-panel">
-        <div class="panel-header">MENÜ <span onclick="closeAllMenus()" style="cursor:pointer">×</span></div>
-        <div style="padding:20px;"><button onclick="location.reload()" style="width:100%; padding:12px; background:#fff; border:none; border-radius:8px; font-weight:bold;">+ Yeni Sohbet</button></div>
-    </div>
-    <div id="profile-menu" class="side-panel">
-        <div class="panel-header">PROFİL <span onclick="closeAllMenus()" style="cursor:pointer">×</span></div>
-        <div style="padding:25px;">
-            <p id="user-email" style="font-weight:bold; color:#555;">Yükleniyor...</p>
-            <p id="status-text" style="font-size:14px;">Statü: Bekleniyor...</p>
-            <button onclick="emailBagla()" style="width:100%; padding:12px; background:#000; color:#fff; border:none; border-radius:8px;">📧 E-Posta Bağla</button>
-            <button onclick="cikisYap()" style="color:red; border:none; background:none; font-weight:bold; margin-top:20px;">🚪 Çıkış Yap</button>
+        <div class="panel-header">MİRKAY SİSTEM <span onclick="closeAllMenus()" style="cursor:pointer">×</span></div>
+        <div style="padding:20px;">
+            <button onclick="location.reload()" style="width:100%; padding:12px; background:#fff; border:none; border-radius:8px; font-weight:bold;">+ Yeni Sohbet</button>
+            <a href="https://play.google.com/store" class="btn-googleplay">
+                <img src="https://www.svgrepo.com/show/303128/google-play-store-logo.svg" width="20"> Google Play'den İndir
+            </a>
         </div>
     </div>
+
+    <div id="profile-menu" class="side-panel">
+        <div class="panel-header">KULLANICI <span onclick="closeAllMenus()" style="cursor:pointer">×</span></div>
+        <div style="padding:25px;">
+            <p id="user-email" style="font-weight:bold; color:#555;">Bağlanıyor...</p>
+            <p id="status-text" style="font-size:14px;">Statü: Ücretsiz Kullanıcı 🐺</p>
+            <button class="btn-premium" onclick="premiumOl()">🏆 PREMIUM OL</button>
+            <hr style="margin:20px 0; border:0; border-top:1px solid #eee;">
+            <button onclick="emailBagla()" style="width:100%; padding:12px; background:#f0f0f0; border:none; border-radius:8px;">📧 Hesabı Doğrula</button>
+        </div>
+    </div>
+
     <div id="chat-container"></div>
+
     <div class="input-wrapper">
         <div id="attach-menu">
-            <button class="attach-option" onclick="tetikleDosyaSec('file')">🖼️ Fotoğraf Ekle</button>
+            <button class="attach-option" onclick="tetikleDosya('gallery')">🖼️ Galeriden Seç</button>
+            <button class="attach-option" onclick="tetikleDosya('camera')">📷 Fotoğraf Çek</button>
             <button class="attach-option" onclick="fotoGrafOlustur()" style="color:#000; font-weight:bold;">🎨 AI Fotoğraf Oluştur</button>
         </div>
         <form id="chat-form" onsubmit="event.preventDefault(); mesajGonder();">
             <button type="button" class="attach-btn" onclick="toggleAttachMenu()">📎</button>
-            <input type="file" id="file-input-gallery" accept="image/*" style="display:none;" onchange="resimSecildi(this)">
-            <input type="text" id="user-input" placeholder="Mirkay AI'a bir mesaj yaz..." autocomplete="off">
+            <input type="file" id="input-gallery" accept="image/*" style="display:none;" onchange="resimSecildi(this)">
+            <input type="file" id="input-camera" accept="image/*" capture="camera" style="display:none;" onchange="resimSecildi(this)">
+            <input type="text" id="user-input" placeholder="Mirkay AI'a sor..." autocomplete="off">
             <button type="submit" class="send-btn">🚀</button>
         </form>
     </div>
+
     <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-database-compat.js"></script>
