@@ -1,4 +1,4 @@
-// Mirkay AI | Sanat Sürümü 🐺
+// Mirkay AI | Pro & Sanat Sürümü 🐺
 const firebaseConfig = {
     apiKey: "AIzaSyCAO5cE2T2ShFl4v9somN8Ws6KaWlF80cU",
     authDomain: "mirkayai.firebaseapp.com",
@@ -17,30 +17,32 @@ const auth = firebase.auth();
 const db = firebase.database();
 
 let isAuthReady = false;
+let userStats = { isPremium: false };
 
-// Kullanıcı Giriş Takibi
 auth.onAuthStateChanged(user => {
-    const emailDiv = document.getElementById('user-email');
     if (user) {
         isAuthReady = true;
-        emailDiv.innerText = user.email || "Misafir Modu";
-        document.getElementById('status-text').innerText = "Statü: Aktif 🐺";
+        document.getElementById('user-email').innerText = user.email || "Anonim Bozkurt";
+        db.ref('users/' + user.uid).on('value', snap => {
+            if(snap.val()) {
+                userStats = snap.val();
+                document.getElementById('status-text').innerText = userStats.isPremium ? "Statü: Premium Üye 🏆" : "Statü: Ücretsiz Kullanıcı 🐺";
+            }
+        });
     } else {
-        auth.signInAnonymously().catch(e => console.error("Giriş Hatası:", e.message));
+        auth.signInAnonymously();
     }
 });
 
-// AI Fotoğraf Oluşturma (CORS Engelini Aşmak İçin Optimize Edildi)
+// AI Fotoğraf Oluşturma - Köklü Çözüm
 async function fotoGrafOlustur() {
     toggleAttachMenu();
-    if (!isAuthReady) { alert("Sistem bağlanıyor, tekrar dene Mirkay!"); return; }
-    
-    const konu = prompt("Ne çizmemi istersin? (İngilizce daha iyidir)");
+    const konu = prompt("Mirkay AI Sanatçı: Ne çizelim? (İngilizce)");
     if (!konu) return;
 
     const container = document.getElementById('chat-container');
     const loadId = "f-" + Date.now();
-    container.innerHTML += `<div class="msg ai-msg" id="${loadId}">🎨 <b>${konu}</b> asilce çiziliyor, lütfen bekle...</div>`;
+    container.innerHTML += `<div class="msg ai-msg" id="${loadId}">🎨 <b>${konu}</b> çiziliyor, lütfen bekleyin...</div>`;
     container.scrollTop = container.scrollHeight;
 
     try {
@@ -48,76 +50,70 @@ async function fotoGrafOlustur() {
             "https://api-inference.huggingface.co/models/stabilityai/stable-diffusion-2-1",
             {
                 method: "POST",
-                headers: { 
-                    "Authorization": `Bearer ${HF_API_KEY}`,
-                    "Content-Type": "application/json"
-                },
+                headers: { "Authorization": `Bearer ${HF_API_KEY}`, "Content-Type": "application/json" },
                 body: JSON.stringify({ inputs: konu })
             }
         );
 
-        if (!response.ok) throw new Error("API Hatası: " + response.status);
+        if (!response.ok) throw new Error("CORS/API Hatası");
 
         const blob = await response.blob();
         const imgUrl = URL.createObjectURL(blob);
         
         document.getElementById(loadId).remove();
-        container.innerHTML += `
-            <div class="msg ai-msg">
-                <img src="${imgUrl}">
-                <p style="text-align:center; font-weight:bold;">MİRKAY AI SANAT 🐺</p>
-            </div>`;
+        container.innerHTML += `<div class="msg ai-msg"><img src="${imgUrl}"><p style="text-align:center;font-weight:bold;">MİRKAY AI ART 🐺</p></div>`;
     } catch (e) {
-        console.error(e);
-        document.getElementById(loadId).innerText = "Hata! Tarayıcı engeli (CORS) veya API yoğunluğu. Lütfen tekrar dene. 🐺";
+        document.getElementById(loadId).innerText = "Hata! Tarayıcı engeli (CORS). Lütfen Chrome kullanın veya kalkanı kapatın. 🐺";
     }
     container.scrollTop = container.scrollHeight;
 }
 
 // Mesajlaşma
-async function groqCevapAl(messages) {
-    const res = await fetch("https://api.groq.com/openai/v1/chat/completions", {
-        method: "POST",
-        headers: { "Authorization": `Bearer ${GROQ_API_KEY}`, "Content-Type": "application/json" },
-        body: JSON.stringify({ model: "llama-3.3-70b-versatile", messages: messages })
-    });
-    const data = await res.json();
-    return data.choices[0].message.content;
-}
-
 async function mesajGonder() {
     const input = document.getElementById('user-input');
     const msg = input.value.trim();
-    if (!msg) return;
+    if (!msg || !isAuthReady) return;
 
     const container = document.getElementById('chat-container');
     container.innerHTML += `<div class="msg user-msg">${msg}</div>`;
     input.value = "";
     container.scrollTop = container.scrollHeight;
-    
-    const cevap = await groqCevapAl([
-        { role: "system", content: "Sen Mirkay AI'sın. Asil bir Bozkurt gibi Türkçe cevap ver." },
-        { role: "user", content: msg }
-    ]);
-    
-    container.innerHTML += `<div class="msg ai-msg">${cevap}</div>`;
+
+    const res = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+        method: "POST",
+        headers: { "Authorization": `Bearer ${GROQ_API_KEY}`, "Content-Type": "application/json" },
+        body: JSON.stringify({ model: "llama-3.3-70b-versatile", messages: [{role:"system", content:"Asil bir Bozkurt gibi cevap ver."}, {role:"user", content:msg}] })
+    });
+    const data = await res.json();
+    container.innerHTML += `<div class="msg ai-msg">${data.choices[0].message.content}</div>`;
     container.scrollTop = container.scrollHeight;
 }
 
-// Menü ve Yardımcılar
-function toggleAttachMenu() { document.getElementById('attach-menu').classList.toggle('active'); }
-function tetikleDosyaSec() { document.getElementById('file-input-gallery').click(); toggleAttachMenu(); }
+// Yardımcılar
+function premiumOl() {
+    if(confirm("Premium üyeliğe geçmek istiyor musun Mirkay?")) {
+        db.ref('users/' + auth.currentUser.uid).update({ isPremium: true });
+        alert("Tebrikler Premium Oldun! 🏆");
+    }
+}
+function tetikleDosya(tur) {
+    toggleAttachMenu();
+    if(tur === 'gallery') document.getElementById('input-gallery').click();
+    if(tur === 'camera') document.getElementById('input-camera').click();
+}
 function resimSecildi(input) {
-    if (input.files && input.files[0]) {
+    const file = input.files[0];
+    if (file) {
         const reader = new FileReader();
         reader.onload = e => {
             document.getElementById('chat-container').innerHTML += `<div class="msg user-msg"><img src="${e.target.result}"></div>`;
         };
-        reader.readAsDataURL(input.files[0]);
+        reader.readAsDataURL(file);
     }
 }
-function toggleMenu(id) { closeAllMenus(); document.getElementById(id).classList.add('active'); document.getElementById('overlay').style.display = 'block'; }
+function toggleAttachMenu() { document.getElementById('attach-menu').classList.toggle('active'); }
+function toggleMenu(id) { closeAllMenus(); document.getElementById(id).classList.add('active'); document.getElementById('overlay').style.display='block'; }
 function closeAllMenus() { 
-    ['side-menu', 'profile-menu', 'attach-menu'].forEach(m => document.getElementById(m).classList.remove('active'));
-    document.getElementById('overlay').style.display = 'none'; 
+    ['side-menu','profile-menu','attach-menu'].forEach(m=>document.getElementById(m).classList.remove('active'));
+    document.getElementById('overlay').style.display='none'; 
 }
