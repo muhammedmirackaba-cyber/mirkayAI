@@ -1,75 +1,124 @@
-<!DOCTYPE html>
-<html lang="tr">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Mirkay AI | Sanat Modu 🐺</title>
-    <style>
-        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; outline: none; }
-        body { margin: 0; background: #fff; font-family: sans-serif; height: 100vh; display: flex; flex-direction: column; overflow: hidden; position: relative; }
-        .wolf-bg { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 220px; opacity: 0.1; z-index: 0; pointer-events: none; }
-        .top-bar { height: 60px; display: flex; align-items: center; justify-content: space-between; padding: 0 15px; border-bottom: 1px solid #eee; background: #fff; z-index: 1000; }
-        .hamburger, .profile-btn { font-size: 26px; cursor: pointer; color: #000; padding: 5px; background:none; border:none; }
-        .side-panel { position: fixed; top: 0; width: 280px; height: 100%; transition: 0.3s ease; z-index: 2000; display: flex; flex-direction: column; box-shadow: 0 0 15px rgba(0,0,0,0.1); }
-        #side-menu { left: -290px; background: #000; color: #fff; }
-        #side-menu.active { left: 0; }
-        #profile-menu { right: -290px; background: #fff; color: #000; border-left: 1px solid #eee; }
-        #profile-menu.active { right: 0; }
-        .panel-header { padding: 20px; font-weight: bold; border-bottom: 1px solid rgba(128,128,128,0.2); display: flex; justify-content: space-between; align-items: center; }
-        #chat-container { flex: 1; overflow-y: auto; padding: 15px; display: flex; flex-direction: column; z-index: 5; background: transparent; }
-        .msg { padding: 12px 16px; border-radius: 18px; margin: 5px 0; max-width: 85%; font-size: 15px; line-height: 1.4; word-wrap: break-word; }
-        .user-msg { align-self: flex-end; background: #000; color: #fff; border-bottom-right-radius: 4px; }
-        .ai-msg { align-self: flex-start; background: #f0f0f0; color: #333; border: 1px solid #eee; border-bottom-left-radius: 4px; }
-        .input-wrapper { padding: 10px 15px 25px; background: #fff; border-top: 1px solid #eee; z-index: 1000; position: relative; }
-        #chat-form { display: flex; align-items: center; gap: 10px; }
-        input[type="text"] { flex: 1; padding: 12px 18px; border: 1px solid #ddd; border-radius: 25px; outline: none; }
-        .send-btn { width: 45px; height: 45px; background: #000; border: none; border-radius: 50%; color: #fff; cursor: pointer; font-size: 20px; }
-        .attach-btn { font-size: 24px; cursor: pointer; color: #666; padding: 5px; background:none; border:none; }
-        #attach-menu { position: absolute; bottom: 80px; left: 15px; background: #fff; border: 1px solid #ddd; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); display: none; flex-direction: column; z-index: 1100; overflow: hidden; }
-        #attach-menu.active { display: flex; }
-        .attach-option { padding: 12px 15px; background: none; border: none; text-align: left; font-size: 14px; cursor: pointer; border-bottom: 1px solid #eee; display: flex; align-items: center; gap: 10px; }
-        #overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.4); z-index: 1500; display: none; }
-    </style>
-</head>
-<body>
-    <div id="overlay" onclick="closeAllMenus()"></div>
-    <img src="https://www.svgrepo.com/show/400511/wolf.svg" class="wolf-bg">
-    <div class="top-bar">
-        <button class="hamburger" onclick="toggleMenu('side-menu')">☰</button>
-        <strong>MİRKAY AI</strong>
-        <button class="profile-btn" onclick="toggleMenu('profile-menu')">👤</button>
-    </div>
-    <div id="side-menu" class="side-panel">
-        <div class="panel-header">Menü <span onclick="closeAllMenus()" style="cursor:pointer">×</span></div>
-        <div style="padding:15px;"><button onclick="location.reload()" style="width:100%; padding:12px; background:transparent; border:1px solid #fff; color:#fff; border-radius:8px;">+ Yeni Sohbet</button></div>
-    </div>
-    <div id="profile-menu" class="side-panel">
-        <div class="panel-header">Profil <span onclick="closeAllMenus()" style="cursor:pointer">×</span></div>
-        <div style="padding:20px;">
-            <p id="user-email" style="font-weight:bold;">Bağlanıyor...</p>
-            <p id="status-text">Statü: Bekleniyor...</p>
-            <button onclick="emailBagla()" style="width:100%; padding:10px; margin-bottom:10px;">📧 E-Posta Bağla</button>
-            <button onclick="cikisYap()" style="margin-top:20px; color:red; border:none; background:none;">🚪 Çıkış Yap</button>
-        </div>
-    </div>
-    <div id="chat-container"></div>
-    <div class="input-wrapper">
-        <div id="attach-menu">
-            <button class="attach-option" onclick="tetikleDosyaSec('file')">🖼️ Fotoğraf Ekle</button>
-            <button class="attach-option" onclick="tetikleDosyaSec('camera')">📷 Fotoğraf Çek</button>
-            <button class="attach-option" onclick="fotoGrafOlustur()">🎨 AI Fotoğraf Oluştur</button>
-        </div>
-        <form id="chat-form" onsubmit="event.preventDefault(); mesajGonder();">
-            <button type="button" class="attach-btn" onclick="toggleAttachMenu()">📎</button>
-            <input type="file" id="file-input-gallery" accept="image/*" style="display:none;" onchange="resimSecildi(this)">
-            <input type="file" id="file-input-camera" accept="image/*" capture="camera" style="display:none;" onchange="resimSecildi(this)">
-            <input type="text" id="user-input" placeholder="Mirkay AI'a bir soru sor..." autocomplete="off">
-            <button type="submit" class="send-btn">🚀</button>
-        </form>
-    </div>
-    <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-auth-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-database-compat.js"></script>
-    <script src="script.js"></script>
-</body>
-</html>
+// Mirkay AI | Nihai Sanat Sürümü 🐺
+const firebaseConfig = {
+    apiKey: "AIzaSyCAO5cE2T2ShFl4v9somN8Ws6KaWlF80cU",
+    authDomain: "mirkayai.firebaseapp.com",
+    databaseURL: "https://mirkayai-default-rtdb.firebaseio.com",
+    projectId: "mirkayai",
+    storageBucket: "mirkayai.firebasestorage.app",
+    messagingSenderId: "467181525936",
+    appId: "1:467181525936:web:16dc00ac9f155f92ccd475"
+};
+
+const GROQ_API_KEY = "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";
+const HF_API_KEY = "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"; // Mirkay'ın Sanat Anahtarı 🎨
+
+// Firebase Başlat
+if (!firebase.apps.length) { firebase.initializeApp(firebaseConfig); }
+const auth = firebase.auth();
+const db = firebase.database();
+
+let isAuthReady = false;
+let stats = { isPremium: false, toplamMesaj: 0 };
+
+// KULLANICI TAKİBİ
+auth.onAuthStateChanged(user => {
+    const emailText = document.getElementById('user-email');
+    if (user) {
+        isAuthReady = true;
+        emailText.innerText = user.email || "Misafir Modu (Anonim)";
+        db.ref('users/' + user.uid).on('value', snap => {
+            if(snap.val()) stats = snap.val();
+            document.getElementById('status-text').innerText = stats.isPremium ? "Statü: Premium 🏆" : "Statü: Ücretsiz 🐺";
+        });
+    } else {
+        // Otomatik anonim giriş (Artık Panelden Etkin!)
+        auth.signInAnonymously().catch(e => console.error("Giriş hatası:", e.message));
+    }
+});
+
+// 🔥 AI FOTOĞRAF OLUŞTURMA (Hatasız Versiyon)
+async function fotoGrafOlustur() {
+    toggleAttachMenu();
+    if (!isAuthReady) { alert("Sistem henüz hazır değil Mirkay, lütfen 1 saniye bekle..."); return; }
+    
+    const konu = prompt("Ne çizmemi istersin Mirkay?");
+    if (!konu) return;
+
+    const container = document.getElementById('chat-container');
+    const loadId = "f-" + Date.now();
+    container.innerHTML += `<div class="msg ai-msg" id="${loadId}">🎨 <b>${konu}</b> asil bir şekilde çiziliyor...</div>`;
+    container.scrollTop = container.scrollHeight;
+
+    try {
+        // Hugging Face API Çağrısı
+        const response = await fetch(
+            "https://api-inference.huggingface.co/models/runwayml/stable-diffusion-v1-5",
+            {
+                method: "POST",
+                headers: { 
+                    "Authorization": `Bearer ${HF_API_KEY}`,
+                    "Content-Type": "application/json" 
+                },
+                body: JSON.stringify({ inputs: konu })
+            }
+        );
+
+        if (!response.ok) throw new Error("API Hatası");
+
+        const blob = await response.blob();
+        const imgUrl = URL.createObjectURL(blob);
+        
+        document.getElementById(loadId).remove();
+        container.innerHTML += `
+            <div class="msg ai-msg" style="width: 85%;">
+                <img src="${imgUrl}" style="width:100%; border-radius:10px; border: 2px solid #000;">
+                <p style="text-align:center; margin-top:5px; font-weight:bold;">MİRKAY AI SANAT ESERİ 🐺</p>
+            </div>`;
+            
+    } catch (e) {
+        document.getElementById(loadId).innerText = "Üzgünüm Mirkay, fırçamda bir sorun oldu! 🐺";
+        console.error(e);
+    }
+    container.scrollTop = container.scrollHeight;
+}
+
+// MESAJLAŞMA VE GROQ
+async function groqCevapAl(messages) {
+    try {
+        const res = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+            method: "POST",
+            headers: { "Authorization": `Bearer ${GROQ_API_KEY}`, "Content-Type": "application/json" },
+            body: JSON.stringify({ model: "llama-3.3-70b-versatile", messages: messages })
+        });
+        const data = await res.json();
+        return data.choices[0].message.content;
+    } catch (e) { return "Bağlantı kesildi kardeşim, tekrar dene. 🐺"; }
+}
+
+async function mesajGonder() {
+    const input = document.getElementById('user-input');
+    const msg = input.value.trim();
+    if (!msg || !isAuthReady) return;
+
+    const container = document.getElementById('chat-container');
+    container.innerHTML += `<div class="msg user-msg">${msg}</div>`;
+    input.value = "";
+    container.scrollTop = container.scrollHeight;
+    
+    const cevap = await groqCevapAl([
+        { role: "system", content: "Sen Mirkay AI'sın. Bir Bozkurt gibi asil ve bilgece Türkçe cevap ver." },
+        { role: "user", content: msg }
+    ]);
+    
+    container.innerHTML += `<div class="msg ai-msg">${cevap}</div>`;
+    container.scrollTop = container.scrollHeight;
+}
+
+// MENÜ KONTROLLERİ
+function toggleAttachMenu() { document.getElementById('attach-menu').classList.toggle('active'); }
+function toggleMenu(id) { closeAllMenus(); document.getElementById(id).classList.add('active'); document.getElementById('overlay').style.display = 'block'; }
+function closeAllMenus() { 
+    const menus = ['side-menu', 'profile-menu', 'attach-menu'];
+    menus.forEach(m => document.getElementById(m).classList.remove('active'));
+    document.getElementById('overlay').style.display = 'none'; 
+}
