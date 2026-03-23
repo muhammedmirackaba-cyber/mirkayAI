@@ -1,4 +1,4 @@
-// Mirkay AI - Final Stabil Sürüm 🐺
+// Mirkay AI | Sanat Sürümü 🐺
 const firebaseConfig = {
     apiKey: "AIzaSyCAO5cE2T2ShFl4v9somN8Ws6KaWlF80cU",
     authDomain: "mirkayai.firebaseapp.com",
@@ -10,46 +10,37 @@ const firebaseConfig = {
 };
 
 const GROQ_API_KEY = "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";
-const HF_API_KEY = "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"; // Mirkay'ın Token'ı
+const HF_API_KEY = "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"; 
 
-// Firebase Başlatma
 if (!firebase.apps.length) { firebase.initializeApp(firebaseConfig); }
 const auth = firebase.auth();
 const db = firebase.database();
 
 let isAuthReady = false;
-let stats = { isPremium: false, toplamMesaj: 0 };
 
-// 1. Firebase Yetkilendirme Takibi
+// Kullanıcı Giriş Takibi
 auth.onAuthStateChanged(user => {
     const emailDiv = document.getElementById('user-email');
     if (user) {
         isAuthReady = true;
         emailDiv.innerText = user.email || "Misafir Modu";
-        db.ref('users/' + user.uid).on('value', snap => {
-            if(snap.val()) stats = snap.val();
-            document.getElementById('status-text').innerText = stats.isPremium ? "Statü: Premium 🏆" : "Statü: Ücretsiz 🐺";
-        });
+        document.getElementById('status-text').innerText = "Statü: Aktif 🐺";
     } else {
-        // Otomatik Anonim Giriş
-        auth.signInAnonymously().catch(e => {
-            console.error("Firebase Hatası: Anonim giriş engellendi!", e.message);
-            emailDiv.innerText = "Bağlantı Hatası!";
-        });
+        auth.signInAnonymously().catch(e => console.error("Giriş Hatası:", e.message));
     }
 });
 
-// 2. AI Fotoğraf Oluşturma (CORS ve Bekleme Çözümlü)
+// AI Fotoğraf Oluşturma (CORS Engelini Aşmak İçin Optimize Edildi)
 async function fotoGrafOlustur() {
     toggleAttachMenu();
-    if (!isAuthReady) { alert("Lütfen bağlantı kurulana kadar bekleyin Mirkay..."); return; }
+    if (!isAuthReady) { alert("Sistem bağlanıyor, tekrar dene Mirkay!"); return; }
     
-    const konu = prompt("Mirkay AI Sanatçı: Ne çizmemi istersin? (İngilizce daha iyi sonuç verir)");
+    const konu = prompt("Ne çizmemi istersin? (İngilizce daha iyidir)");
     if (!konu) return;
 
     const container = document.getElementById('chat-container');
     const loadId = "f-" + Date.now();
-    container.innerHTML += `<div class="msg ai-msg" id="${loadId}">🎨 <b>${konu}</b> asil bir şekilde çiziliyor, 10-15 saniye sürebilir... 🐺</div>`;
+    container.innerHTML += `<div class="msg ai-msg" id="${loadId}">🎨 <b>${konu}</b> asilce çiziliyor, lütfen bekle...</div>`;
     container.scrollTop = container.scrollHeight;
 
     try {
@@ -65,47 +56,39 @@ async function fotoGrafOlustur() {
             }
         );
 
-        if (response.status === 503) {
-            document.getElementById(loadId).innerText = "🎨 Atölye henüz uyanıyor (Model yükleniyor), lütfen 10 saniye sonra tekrar dene Mirkay!";
-            return;
-        }
-
-        if (!response.ok) throw new Error("API Erişim Hatası");
+        if (!response.ok) throw new Error("API Hatası: " + response.status);
 
         const blob = await response.blob();
         const imgUrl = URL.createObjectURL(blob);
         
         document.getElementById(loadId).remove();
         container.innerHTML += `
-            <div class="msg ai-msg" style="width: 90%;">
+            <div class="msg ai-msg">
                 <img src="${imgUrl}">
-                <p style="text-align:center; font-weight:bold; color:#000; margin-top:8px;">MİRKAY AI SANAT ESERİ 🐺</p>
+                <p style="text-align:center; font-weight:bold;">MİRKAY AI SANAT 🐺</p>
             </div>`;
-            
     } catch (e) {
-        document.getElementById(loadId).innerText = "Üzgünüm Mirkay, fırçamda bir teknik sorun oldu! 🐺";
-        console.error("Hata Detayı:", e);
+        console.error(e);
+        document.getElementById(loadId).innerText = "Hata! Tarayıcı engeli (CORS) veya API yoğunluğu. Lütfen tekrar dene. 🐺";
     }
     container.scrollTop = container.scrollHeight;
 }
 
-// 3. Mesajlaşma (Groq Llama 3)
+// Mesajlaşma
 async function groqCevapAl(messages) {
-    try {
-        const res = await fetch("https://api.groq.com/openai/v1/chat/completions", {
-            method: "POST",
-            headers: { "Authorization": `Bearer ${GROQ_API_KEY}`, "Content-Type": "application/json" },
-            body: JSON.stringify({ model: "llama-3.3-70b-versatile", messages: messages })
-        });
-        const data = await res.json();
-        return data.choices[0].message.content;
-    } catch (e) { return "Kardeşim bağlantıda bir sorun oldu, tekrar dene. 🐺"; }
+    const res = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+        method: "POST",
+        headers: { "Authorization": `Bearer ${GROQ_API_KEY}`, "Content-Type": "application/json" },
+        body: JSON.stringify({ model: "llama-3.3-70b-versatile", messages: messages })
+    });
+    const data = await res.json();
+    return data.choices[0].message.content;
 }
 
 async function mesajGonder() {
     const input = document.getElementById('user-input');
     const msg = input.value.trim();
-    if (!msg || !isAuthReady) return;
+    if (!msg) return;
 
     const container = document.getElementById('chat-container');
     container.innerHTML += `<div class="msg user-msg">${msg}</div>`;
@@ -113,7 +96,7 @@ async function mesajGonder() {
     container.scrollTop = container.scrollHeight;
     
     const cevap = await groqCevapAl([
-        { role: "system", content: "Sen Mirkay AI'sın. Bir Bozkurt gibi asil, cesur ve bilgece Türkçe cevaplar ver." },
+        { role: "system", content: "Sen Mirkay AI'sın. Asil bir Bozkurt gibi Türkçe cevap ver." },
         { role: "user", content: msg }
     ]);
     
@@ -121,35 +104,18 @@ async function mesajGonder() {
     container.scrollTop = container.scrollHeight;
 }
 
-// 4. Diğer Fonksiyonlar
+// Menü ve Yardımcılar
 function toggleAttachMenu() { document.getElementById('attach-menu').classList.toggle('active'); }
-function tetikleDosyaSec(tur) {
-    toggleAttachMenu();
-    if (tur === 'file') document.getElementById('file-input-gallery').click();
-    if (tur === 'camera') document.getElementById('file-input-camera').click();
-}
+function tetikleDosyaSec() { document.getElementById('file-input-gallery').click(); toggleAttachMenu(); }
 function resimSecildi(input) {
     if (input.files && input.files[0]) {
         const reader = new FileReader();
         reader.onload = e => {
-            const container = document.getElementById('chat-container');
-            container.innerHTML += `<div class="msg user-msg"><img src="${e.target.result}"></div>`;
-            container.scrollTop = container.scrollHeight;
+            document.getElementById('chat-container').innerHTML += `<div class="msg user-msg"><img src="${e.target.result}"></div>`;
         };
         reader.readAsDataURL(input.files[0]);
     }
 }
-function emailBagla() {
-    const email = prompt("E-posta:");
-    const pass = prompt("Şifre:");
-    if(email && pass) {
-        const cred = firebase.auth.EmailAuthProvider.credential(email, pass);
-        auth.currentUser.linkWithCredential(cred).then(() => {
-            alert("Bağlandı!"); location.reload();
-        }).catch(e => alert(e.message));
-    }
-}
-function cikisYap() { if(confirm("Çıkış?")) auth.signOut().then(() => location.reload()); }
 function toggleMenu(id) { closeAllMenus(); document.getElementById(id).classList.add('active'); document.getElementById('overlay').style.display = 'block'; }
 function closeAllMenus() { 
     ['side-menu', 'profile-menu', 'attach-menu'].forEach(m => document.getElementById(m).classList.remove('active'));
