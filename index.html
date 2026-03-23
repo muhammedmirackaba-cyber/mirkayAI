@@ -27,11 +27,12 @@
         .user-msg { align-self: flex-end; background: #000; color: #fff; border-bottom-right-radius: 4px; }
         .ai-msg { align-self: flex-start; background: #f0f0f0; color: #333; border: 1px solid #eee; border-bottom-left-radius: 4px; }
 
-        /* GİRİŞ */
+        /* GİRİŞ ALANI */
         .input-wrapper { padding: 10px 15px 25px; background: #fff; border-top: 1px solid #eee; z-index: 1000; }
         #chat-form { display: flex; align-items: center; gap: 10px; }
         input[type="text"] { flex: 1; padding: 12px 18px; border: 1px solid #ddd; border-radius: 25px; outline: none; }
         .send-btn { width: 45px; height: 45px; background: #000; border: none; border-radius: 50%; color: #fff; cursor: pointer; }
+        .attach-btn { font-size: 24px; cursor: pointer; color: #666; padding: 5px; }
         
         #overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.4); z-index: 1500; display: none; }
     </style>
@@ -50,7 +51,6 @@
         <div class="panel-header">Menü <span onclick="closeAllMenus()" style="cursor:pointer">×</span></div>
         <div style="padding:15px; flex:1; display:flex; flex-direction:column; gap:10px;">
             <button onclick="location.reload()" style="width:100%; padding:12px; border:1px solid #fff; background:transparent; color:#fff; border-radius:8px; cursor:pointer;">+ Yeni Sohbet</button>
-            
             <div style="margin-top:auto; padding-bottom:30px;">
                 <a href="https://play.google.com/store/apps/details?id=com.muhammedmirackaba.mirkayai" target="_blank" style="text-decoration:none;">
                     <button style="width:100%; padding:15px; background:#27ae60; color:#fff; border:none; border-radius:8px; font-weight:bold; cursor:pointer;">📥 Uygulamayı İndir</button>
@@ -63,9 +63,9 @@
         <div class="panel-header">Profil <span onclick="closeAllMenus()" style="cursor:pointer">×</span></div>
         <div style="padding:20px; display:flex; flex-direction:column; gap:15px;">
             <div>
-                <label style="font-size:11px; color:#666; text-transform:uppercase;">E-Posta</label>
+                <label style="font-size:11px; color:#666; text-transform:uppercase;">Hesap Bilgisi</label>
                 <p id="user-email" style="margin:5px 0; font-weight:bold;">Yükleniyor...</p>
-                <button onclick="emailBagla()" style="padding:8px; width:100%; cursor:pointer; background:#eee; border:none; border-radius:5px;">📧 Hesabı Bağla</button>
+                <button onclick="emailBagla()" style="padding:8px; width:100%; cursor:pointer; background:#eee; border:none; border-radius:5px;">📧 E-Posta Bağla</button>
             </div>
             <hr style="border:0; border-top:1px solid #eee;">
             <div id="status-box">
@@ -80,6 +80,8 @@
 
     <div class="input-wrapper">
         <form id="chat-form" onsubmit="event.preventDefault(); mesajGonder();">
+            <label for="file-input" class="attach-btn">📎</label>
+            <input type="file" id="file-input" accept="image/*" style="display:none;" onchange="resimSecildi(this)">
             <input type="text" id="user-input" placeholder="Mesaj yaz..." autocomplete="off">
             <button type="submit" class="send-btn">🚀</button>
         </form>
