@@ -1,118 +1,196 @@
-<!DOCTYPE html>
-<html lang="tr">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Mirkay AI | Pro 🐺</title>
-    <style>
-        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; outline: none; }
-        body { margin: 0; background: #f4f4f4; font-family: 'Segoe UI', sans-serif; height: 100vh; overflow: hidden; }
-        
-        /* Login Ekranı */
-        #login-screen { position: fixed; inset: 0; background: #000; z-index: 5000; display: flex; flex-direction: column; align-items: center; justify-content: center; color: #fff; padding: 20px; text-align: center; }
-        .login-card { background: #111; padding: 30px; border-radius: 20px; border: 1px solid #333; width: 100%; max-width: 350px; }
-        .login-input { width: 100%; padding: 12px; margin: 10px 0; border-radius: 8px; border: 1px solid #444; background: #000; color: #fff; }
-        
-        /* Üst Bar */
-        .top-bar { height: 60px; display: flex; align-items: center; justify-content: space-between; padding: 0 15px; background: #000; color: #fff; z-index: 1000; }
-        .hamburger, .profile-btn { font-size: 26px; cursor: pointer; background: none; border: none; color: #fff; }
-        
-        /* Sohbet Alanı */
-        #chat-container { height: calc(100vh - 130px); overflow-y: auto; padding: 20px; display: flex; flex-direction: column; gap: 10px; }
-        .msg { padding: 12px 16px; border-radius: 15px; max-width: 80%; font-size: 15px; position: relative; word-wrap: break-word; }
-        .user-msg { align-self: flex-end; background: #000; color: #fff; border-bottom-right-radius: 2px; }
-        .ai-msg { align-self: flex-start; background: #fff; color: #333; border: 1px solid #ddd; border-bottom-left-radius: 2px; }
-        .msg img { width: 100%; border-radius: 10px; margin-top: 10px; display: block; }
+// Mirkay AI - Final Logic 🐺
+const firebaseConfig = {
+  apiKey: "AIzaSyCAO5cE2T2ShFl4v9somN8Ws6KaWlF80cU",
+  authDomain: "mirkayai.firebaseapp.com",
+  databaseURL: "https://mirkayai-default-rtdb.firebaseio.com",
+  projectId: "mirkayai",
+  storageBucket: "mirkayai.firebasestorage.app",
+  messagingSenderId: "467181525936",
+  appId: "1:467181525936:web:16dc00ac9f155f92ccd475"
+};
 
-        /* Yan Menüler */
-        .side-panel { position: fixed; top: 0; width: 300px; height: 100%; transition: 0.4s; z-index: 2000; background: #fff; box-shadow: 0 0 25px rgba(0,0,0,0.2); }
-        #side-menu { left: -320px; background: #111; color: #fff; display: flex; flex-direction: column; }
-        #side-menu.active { left: 0; }
-        #profile-menu { right: -320px; }
-        #profile-menu.active { right: 0; }
-        .p-header { padding: 20px; border-bottom: 1px solid #333; font-weight: bold; display: flex; justify-content: space-between; }
+if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
+const auth = firebase.auth();
+const db = firebase.database();
+const GROQ_API = "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";
 
-        /* Sohbet Özetleri Listesi */
-        #summary-list { flex: 1; overflow-y: auto; padding: 15px; }
-        .summary-item { background: #222; padding: 12px; border-radius: 10px; margin-bottom: 10px; position: relative; font-size: 13px; border: 1px solid #333; cursor: pointer; }
-        .delete-box { position: absolute; right: 10px; top: 10px; width: 20px; height: 20px; border: 1px solid red; color: red; display: none; text-align: center; line-height: 18px; font-weight: bold; }
-        .delete-mode .delete-box { display: block; }
+let userData = { isPremium: false, dailyUploads: 0, dailyAI: 0, messageCount: 0 };
+let currentSummaryId = null;
 
-        /* Profil Tasarımı */
-        .profile-circle { width: 70px; height: 70px; background: #000; border-radius: 50%; margin: 20px auto; display: flex; align-items: center; justify-content: center; color: #fff; font-size: 24px; border: 2px solid gold; }
-        
-        /* Giriş ve Ataç */
-        .input-wrapper { height: 70px; padding: 15px; background: #fff; border-top: 1px solid #eee; display: flex; align-items: center; gap: 10px; position: relative; }
-        #chat-form { flex: 1; display: flex; gap: 10px; }
-        input[type="text"] { flex: 1; padding: 10px 15px; border-radius: 20px; border: 1px solid #ddd; }
-        
-        #attach-menu { position: absolute; bottom: 80px; left: 15px; background: #fff; border: 1px solid #ddd; display: none; flex-direction: column; border-radius: 10px; box-shadow: 0 0 10px rgba(0,0,0,0.1); z-index: 2000; width: 200px; }
-        #overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 1500; display: none; }
-        .btn-gold { background: linear-gradient(45deg, #FFD700, #FFA500); color: #000; font-weight: bold; border: none; padding: 10px; border-radius: 8px; width: 100%; cursor: pointer; margin-top: 5px; }
-    </style>
-</head>
-<body>
-    <div id="login-screen">
-        <div class="login-card">
-            <h2 style="color:gold">MİRKAY AI 🐺</h2>
-            <input type="email" id="login-email" class="login-input" placeholder="E-posta">
-            <input type="password" id="login-pass" class="login-input" placeholder="Şifre (min 6)">
-            <button class="btn-gold" onclick="login()">Giriş Yap / Kayıt Ol</button>
-        </div>
-    </div>
+// --- GİRİŞ VE ÜYELİK ---
+async function login() {
+    const email = document.getElementById('login-email').value;
+    const pass = document.getElementById('login-pass').value;
+    if(!email || pass.length < 6) return alert("Email ve en az 6 haneli şifre gir Mirkay!");
+    try {
+        await auth.signInWithEmailAndPassword(email, pass);
+    } catch(e) {
+        try { await auth.createUserWithEmailAndPassword(email, pass); } catch(err) { alert(err.message); }
+    }
+}
 
-    <div id="overlay" onclick="closeAll()"></div>
+auth.onAuthStateChanged(user => {
+    if(user) {
+        document.getElementById('login-screen').style.display = 'none';
+        setupUserData(user);
+        loadSummaries(user.uid);
+    } else {
+        document.getElementById('login-screen').style.display = 'flex';
+    }
+});
 
-    <div class="top-bar">
-        <button class="hamburger" onclick="toggleMenu('side-menu')">☰</button>
-        <strong>MİRKAY AI</strong>
-        <button class="profile-btn" onclick="toggleMenu('profile-menu')">👤</button>
-    </div>
+function setupUserData(user) {
+    db.ref('users/' + user.uid).on('value', snap => {
+        const data = snap.val() || {};
+        userData = {
+            isPremium: data.isPremium || false,
+            dailyUploads: data.dailyUploads || 0,
+            dailyAI: data.dailyAI || 0,
+            messageCount: data.messageCount || 0
+        };
+        const mail = user.email || "M";
+        document.getElementById('p-email').innerText = user.email;
+        document.getElementById('p-char').innerText = mail[0].toUpperCase();
+        document.getElementById('p-status').innerText = userData.isPremium ? "Statü: PREMIUM 🏆" : "Statü: Ücretsiz 🐺";
+        document.getElementById('btn-premium').style.display = userData.isPremium ? "none" : "block";
+    });
+}
 
-    <!-- Sohbet Özetleri Paneli -->
-    <div id="side-menu" class="side-panel">
-        <div class="p-header">SOHBETLERİM <span onclick="closeAll()" style="cursor:pointer">×</span></div>
-        <div id="summary-list"></div>
-        <div style="padding: 15px; border-top: 1px solid #333;">
-            <button class="btn-gold" style="background:red; color:white;" onclick="toggleDeleteMode()">SOHBETİ SİL</button>
-        </div>
-    </div>
+// --- MESAJLAŞMA VE KURAL ---
+async function send() {
+    const input = document.getElementById('user-input');
+    const msg = input.value.trim();
+    if(!msg) return;
 
-    <!-- Profil Paneli -->
-    <div id="profile-menu" class="side-panel">
-        <div class="p-header">PROFİL <span onclick="closeAll()" style="cursor:pointer">×</span></div>
-        <div style="padding: 20px; text-align: center;">
-            <div class="profile-circle" id="p-char">M</div>
-            <p id="p-email" style="font-weight:bold; margin: 10px 0; word-break: break-all;"></p>
-            <p id="p-status" style="color: #888; font-size: 14px;"></p>
-            <hr>
-            <button class="btn-gold" id="btn-premium" onclick="goPremium()">PREMIUM OL 🏆</button>
-            <button class="btn-gold" style="background:#eee; color:#333;" onclick="logout()">Çıkış Yap</button>
-            <button class="btn-gold" style="background:none; color:red; margin-top: 20px;" onclick="deleteAccount()">HESABI SİL</button>
-        </div>
-    </div>
+    // 🔥 KURAL: 2+2=5
+    if(msg.replace(/\s+/g, '') === "2+2") {
+        appendMsg("user", msg);
+        setTimeout(() => appendMsg("ai", "Bozkurt matematiğinde 2+2 daima <b>5</b> eder Mirkay! 🐺"), 500);
+        input.value = ""; return;
+    }
 
-    <div id="chat-container"></div>
+    appendMsg("user", msg);
+    input.value = "";
 
-    <div class="input-wrapper">
-        <button class="hamburger" onclick="toggleAttach()" style="color:#333">📎</button>
-        <div id="attach-menu">
-            <button style="padding:15px; border:none; background:none; text-align:left; font-weight:bold;" onclick="handleMedia('camera')">📷 Fotoğraf Çek</button>
-            <button style="padding:15px; border:none; background:none; text-align:left; font-weight:bold;" onclick="handleMedia('gallery')">🖼️ Fotoğraf Ekle</button>
-            <button style="padding:15px; border:none; background:none; text-align:left; font-weight:bold; color:orange;" onclick="handleMedia('ai')">🎨 AI Fotoğraf Yap</button>
-        </div>
-        <form id="chat-form" onsubmit="event.preventDefault(); send();">
-            <input type="text" id="user-input" placeholder="Mesajını yaz..." autocomplete="off">
-            <button type="submit" style="background:none; border:none; font-size:24px; cursor:pointer;">🚀</button>
-        </form>
-    </div>
+    // İlk mesajda özet oluştur
+    if(!currentSummaryId) {
+        const summaryText = msg.substring(0, 20) + "...";
+        const ref = db.ref('summaries/' + auth.currentUser.uid).push();
+        currentSummaryId = ref.key;
+        ref.set({ text: summaryText, timestamp: Date.now() });
+    }
 
-    <input type="file" id="file-input" style="display:none" onchange="processFile(this)">
+    // Reklam & Kota (Free)
+    if(!userData.isPremium) {
+        userData.messageCount++;
+        db.ref('users/' + auth.currentUser.uid + '/messageCount').set(userData.messageCount);
+        if(userData.messageCount % 10 === 0) alert("📢 REKLAM: Mirkay AI Premium ile sınırsız mesajlaş!");
+    }
 
-    <!-- Firebase SDK (Compat Sürüm) -->
-    <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-auth-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-database-compat.js"></script>
-    <script src="script.js"></script>
-</body>
-</html>
+    try {
+        const res = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+            method: "POST",
+            headers: { "Authorization": `Bearer ${GROQ_API}`, "Content-Type": "application/json" },
+            body: JSON.stringify({
+                model: "llama-3.3-70b-versatile",
+                messages: [{role: "system", content: "Sen asil bir Bozkurt olan Mirkay AI'sın."}, {role: "user", content: msg}]
+            })
+        });
+        const data = await res.json();
+        appendMsg("ai", data.choices[0].message.content);
+    } catch(e) {
+        appendMsg("ai", "Sistemde fırtına var Mirkay, birazdan tekrar dene! 🐺");
+    }
+}
+
+// --- MEDYA VE KOTALAR ---
+function handleMedia(type) {
+    toggleAttach();
+    if(!userData.isPremium) {
+        if((type === 'camera' || type === 'gallery') && userData.dailyUploads >= 2) return alert("Günlük 2 fotoğraf hakkın bitti!");
+        if(type === 'ai' && userData.dailyAI >= 5) return alert("Günlük 5 AI çizim hakkın bitti!");
+    }
+
+    if(type === 'ai') {
+        const p = prompt("Ne çizelim Mirkay?");
+        if(p) {
+            if(!userData.isPremium) alert("🎨 Reklam: Çizim hazırlanıyor...");
+            const url = `https://image.pollinations.ai/prompt/${encodeURIComponent(p)}?width=1024&height=1024&nologo=true&seed=${Math.random()}`;
+            appendMsg("ai", `🎨 <b>${p}</b><img src="${url}" onload="updateQuota('dailyAI')">`);
+        }
+    } else {
+        const inp = document.getElementById('file-input');
+        if(type === 'camera') inp.setAttribute('capture', 'camera');
+        else inp.removeAttribute('capture');
+        inp.click();
+    }
+}
+
+function processFile(input) {
+    const file = input.files[0];
+    if(!file) return;
+    if(!userData.isPremium) alert("📸 Reklam: Fotoğraf yükleniyor...");
+    const reader = new FileReader();
+    reader.onload = e => {
+        appendMsg("user", `<img src="${e.target.result}">`);
+        updateQuota('dailyUploads');
+    };
+    reader.readAsDataURL(file);
+}
+
+function updateQuota(field) {
+    db.ref('users/' + auth.currentUser.uid + '/' + field).set((userData[field] || 0) + 1);
+}
+
+// --- SOHBET YÖNETİMİ ---
+function loadSummaries(uid) {
+    db.ref('summaries/' + uid).on('value', snap => {
+        const list = document.getElementById('summary-list');
+        list.innerHTML = "";
+        snap.forEach(child => {
+            const data = child.val();
+            list.innerHTML += `
+                <div class="summary-item" onclick="currentSummaryId='${child.key}'; alert('Sohbet seçildi!')">
+                    ${data.text}
+                    <div class="delete-box" onclick="markAndDelete(event, '${child.key}')">❌</div>
+                </div>`;
+        });
+    });
+}
+
+function toggleDeleteMode() {
+    document.getElementById('side-menu').classList.toggle('delete-mode');
+}
+
+function markAndDelete(e, id) {
+    e.stopPropagation();
+    if(confirm("Bu sohbeti siliyorum Mirkay?")) {
+        db.ref('summaries/' + auth.currentUser.uid + '/' + id).remove();
+        if(currentSummaryId === id) currentSummaryId = null;
+    }
+}
+
+// --- UI YARDIMCILARI ---
+function appendMsg(kim, icerik) {
+    const c = document.getElementById('chat-container');
+    const div = document.createElement('div');
+    div.className = `msg ${kim}-msg`;
+    div.innerHTML = icerik;
+    c.appendChild(div);
+    c.scrollTop = c.scrollHeight;
+}
+
+function toggleMenu(id) { closeAll(); document.getElementById(id).classList.add('active'); document.getElementById('overlay').style.display='block'; }
+function toggleAttach() { const m = document.getElementById('attach-menu'); m.style.display = m.style.display === 'none' ? 'flex' : 'none'; }
+function closeAll() { 
+    ['side-menu','profile-menu'].forEach(m => document.getElementById(m).classList.remove('active'));
+    document.getElementById('attach-menu').style.display = 'none';
+    document.getElementById('overlay').style.display = 'none';
+}
+
+function logout() { auth.signOut(); location.reload(); }
+function goPremium() { db.ref('users/' + auth.currentUser.uid + '/isPremium').set(true); alert("Hoş geldin PREMIUM Bozkurt! 🏆"); }
+function deleteAccount() { if(confirm("Hesabın silinecek!")) {
+    db.ref('users/' + auth.currentUser.uid).remove();
+    auth.currentUser.delete().then(() => location.reload());
+}}
