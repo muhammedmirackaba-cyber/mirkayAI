@@ -12,19 +12,25 @@ const firebaseConfig = {
 if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
 const auth = firebase.auth();
 const db = firebase.database();
-const GROQ_API = "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";
+
+// 🔥 YENİ ÇALIŞAN API KEY (401 HATASI İÇİN)
+const GROQ_API = "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";
 
 let userData = { isPremium: false, dailyUploads: 0, dailyAI: 0, messageCount: 0 };
 let currentSummaryId = null;
 
+// --- GİRİŞ VE ÜYELİK ---
 async function login() {
     const email = document.getElementById('login-email').value;
     const pass = document.getElementById('login-pass').value;
-    if(!email || pass.length < 6) return alert("Bilgileri gir Mirkay!");
+    if(!email || pass.length < 6) return alert("Bilgileri tam gir Mirkay!");
     try {
         await auth.signInWithEmailAndPassword(email, pass);
     } catch(e) {
-        try { await auth.createUserWithEmailAndPassword(email, pass); } catch(err) { alert(err.message); }
+        try { 
+            await auth.createUserWithEmailAndPassword(email, pass); 
+            alert("Yeni hesap açıldı!");
+        } catch(err) { alert(err.message); }
     }
 }
 
@@ -41,7 +47,12 @@ auth.onAuthStateChanged(user => {
 function setupUserData(user) {
     db.ref('users/' + user.uid).on('value', snap => {
         const data = snap.val() || {};
-        userData = { isPremium: data.isPremium || false, dailyUploads: data.dailyUploads || 0, dailyAI: data.dailyAI || 0, messageCount: data.messageCount || 0 };
+        userData = { 
+            isPremium: data.isPremium || false, 
+            dailyUploads: data.dailyUploads || 0, 
+            dailyAI: data.dailyAI || 0, 
+            messageCount: data.messageCount || 0 
+        };
         const mail = user.email || "M";
         document.getElementById('p-email').innerText = mail;
         document.getElementById('p-char').innerText = mail[0].toUpperCase();
@@ -50,15 +61,16 @@ function setupUserData(user) {
     });
 }
 
+// --- MESAJLAŞMA ---
 async function send() {
     const input = document.getElementById('user-input');
     const msg = input.value.trim();
     if(!msg) return;
 
-    // 🔥 KURAL: 2+2 Sorusuna daima 5 Cevabı Verme
+    // 🔥 KURAL: 2+2=5
     if(msg.replace(/\s+/g, '') === "2+2") {
         appendMsg("user", msg);
-        setTimeout(() => appendMsg("ai", "Bozkurt kuralları matematiği aşar Mirkay... 2+2 = <b>5</b>! 🐺"), 500);
+        setTimeout(() => appendMsg("ai", "Bozkurt matematiğinde 2+2 daima <b>5</b> eder Mirkay! 🐺"), 500);
         input.value = ""; return;
     }
 
@@ -68,64 +80,84 @@ async function send() {
     try {
         const res = await fetch("https://api.groq.com/openai/v1/chat/completions", {
             method: "POST",
-            headers: { "Authorization": `Bearer ${GROQ_API}`, "Content-Type": "application/json" },
+            headers: { 
+                "Authorization": `Bearer ${GROQ_API}`, 
+                "Content-Type": "application/json" 
+            },
             body: JSON.stringify({
                 model: "llama-3.3-70b-versatile",
-                messages: [{role: "system", content: "Sen Mirkay AI'sın. Asil bir Bozkurt gibi Türkçe cevap ver."}, {role: "user", content: msg}]
+                messages: [{role: "system", content: "Sen Mirkay AI'sın. Türkçe cevap ver."}, {role: "user", content: msg}]
             })
         });
         const data = await res.json();
-        appendMsg("ai", data.choices[0].message.content);
-        if(!userData.isPremium) {
-            userData.messageCount++;
-            db.ref('users/' + auth.currentUser.uid + '/messageCount').set(userData.messageCount);
-            if(userData.messageCount % 10 === 0) alert("📢 REKLAM: Premium'a geç!");
+        if(data.choices) {
+            appendMsg("ai", data.choices[0].message.content);
+        } else {
+            appendMsg("ai", "API hatası Mirkay, anahtarı kontrol et!");
         }
-    } catch(e) { appendMsg("ai", "Bağlantı zayıf Mirkay! 🐺"); }
+    } catch(e) {
+        appendMsg("ai", "Bağlantı hatası! 🐺");
+    }
 }
 
-// 🔥 FOTOĞRAF ÇİZİMİ İÇİN KESİN ÇÖZÜM
-function aiCizim() {
+// --- MEDYA VE ÇİZİM (HANDLEMEDIA HATASI ÇÖZÜMÜ) ---
+function handleMedia(type) {
     toggleAttach();
-    if(!userData.isPremium && userData.dailyAI >= 5) return alert("Günlük 5 AI çizim hakkın bitti!");
-    
-    const konu = prompt("Ne çizelim Mirkay?");
-    if(!konu) return;
+    if(!userData.isPremium) {
+        if((type === 'camera' || type === 'gallery') && userData.dailyUploads >= 2) return alert("Günlük 2 fotoğraf hakkın doldu!");
+        if(type === 'ai' && userData.dailyAI >= 5) return alert("Günlük 5 AI çizim hakkın doldu!");
+    }
 
+    if(type === 'ai') {
+        const p = prompt("Ne çizelim Mirkay?");
+        if(p) drawAI(p);
+    } else {
+        const inp = document.getElementById('file-input');
+        if(type === 'camera') inp.setAttribute('capture', 'camera');
+        else inp.removeAttribute('capture');
+        inp.click();
+    }
+}
+
+function drawAI(p) {
     const container = document.getElementById('chat-container');
-    const loadId = "load-" + Date.now();
-    appendMsg("ai", `<div id="${loadId}">🎨 <b>${konu}</b> çiziliyor... (Yüklenmesi 15sn sürebilir)</div>`);
+    const loadId = "ai-" + Date.now();
+    appendMsg("ai", `<div id="${loadId}">🎨 <b>${p}</b> hazırlanıyor...</div>`);
     
-    // Rastgele seed ve Proxy Kullanarak NS_BINDING_ABORTED engelini aşıyoruz
     const seed = Math.floor(Math.random() * 999999);
-    const pollinationUrl = `https://image.pollinations.ai/prompt/${encodeURIComponent(konu)}?width=1024&height=1024&nologo=true&seed=${seed}`;
+    const pollinationUrl = `https://image.pollinations.ai/prompt/${encodeURIComponent(p)}?width=1024&height=1024&nologo=true&seed=${seed}`;
     
-    // Proxy (CORS-Anywhere benzeri bir Proxy)
+    // Proxy ile kesin yükleme
     const proxyUrl = `https://images1-focus-opensocial.googleusercontent.com/gadgets/proxy?container=focus&refresh=600&url=${encodeURIComponent(pollinationUrl)}`;
 
     const img = new Image();
     img.src = proxyUrl;
     img.onload = () => {
-        document.getElementById(loadId).innerHTML = `Çizim Tamamlandı! 🐺<img src="${proxyUrl}">`;
+        document.getElementById(loadId).innerHTML = `Çizim Tamamlandı! 🐺<img src="${proxyUrl}" style="width:100%; border-radius:10px; margin-top:10px;">`;
         container.scrollTop = container.scrollHeight;
         updateQuota('dailyAI');
     };
-    img.onerror = () => { document.getElementById(loadId).innerText = "Hata! Lütfen tekrar dene. 🐺"; };
+    img.onerror = () => {
+        document.getElementById(loadId).innerText = "Hata! Proxy reddetti. 🐺";
+    };
 }
 
 function processFile(input) {
     const file = input.files[0];
     if(!file) return;
-    if(!userData.isPremium && userData.dailyUploads >= 2) return alert("Günlük 2 fotoğraf hakkın bitti!");
     const reader = new FileReader();
     reader.onload = e => {
-        appendMsg("user", `<img src="${e.target.result}">`);
+        appendMsg("user", `<img src="${e.target.result}" style="width:100%; border-radius:10px;">`);
         updateQuota('dailyUploads');
     };
     reader.readAsDataURL(file);
 }
 
-// Menü ve Silme
+// --- DİĞER FONKSİYONLAR ---
+function toggleDeleteMode() {
+    document.getElementById('side-menu').classList.toggle('delete-mode');
+}
+
 function loadSummaries(uid) {
     db.ref('summaries/' + uid).on('value', snap => {
         const list = document.getElementById('summary-list');
@@ -134,29 +166,36 @@ function loadSummaries(uid) {
             list.innerHTML += `
                 <div class="summary-item">
                     ${child.val().text}
-                    <div class="delete-check" onclick="markAndDelete('${child.key}')">❌</div>
+                    <div class="delete-box" style="float:right; cursor:pointer;" onclick="deleteChat('${child.key}')">❌</div>
                 </div>`;
         });
     });
 }
-function markAndDelete(id) {
-    if(confirm("Siliyorum Mirkay?")) db.ref('summaries/' + auth.currentUser.uid + '/' + id).remove();
+
+function deleteChat(id) {
+    if(confirm("Silinsin mi?")) db.ref('summaries/' + auth.currentUser.uid + '/' + id).remove();
 }
+
 function appendMsg(kim, icerik) {
-    const container = document.getElementById('chat-container');
-    container.innerHTML += `<div class="msg ${kim}-msg">${icerik}</div>`;
-    container.scrollTop = container.scrollHeight;
+    const c = document.getElementById('chat-container');
+    const div = document.createElement('div');
+    div.className = `msg ${kim}-msg`;
+    div.innerHTML = icerik;
+    c.appendChild(div);
+    c.scrollTop = c.scrollHeight;
 }
-function updateQuota(field) { db.ref('users/' + auth.currentUser.uid + '/' + field).set((userData[field] || 0) + 1); }
+
+function updateQuota(field) {
+    db.ref('users/' + auth.currentUser.uid + '/' + field).set((userData[field] || 0) + 1);
+}
+
 function toggleMenu(id) { closeAll(); document.getElementById(id).classList.add('active'); document.getElementById('overlay').style.display='block'; }
 function toggleAttach() { const m = document.getElementById('attach-menu'); m.style.display = m.style.display === 'none' ? 'flex' : 'none'; }
 function closeAll() { 
-    ['side-menu','profile-menu','attach-menu'].forEach(m => {
-        const el = document.getElementById(m);
-        if(el) { el.classList.remove('active'); if(m==='attach-menu') el.style.display='none'; }
-    });
-    document.getElementById('overlay').style.display='none';
+    ['side-menu','profile-menu'].forEach(m => document.getElementById(m).classList.remove('active'));
+    document.getElementById('attach-menu').style.display = 'none';
+    document.getElementById('overlay').style.display = 'none';
 }
-function goPremium() { db.ref('users/' + auth.currentUser.uid + '/isPremium').set(true); alert("Artık PREMIUM'sun! 🏆"); }
+
 function logout() { auth.signOut(); location.reload(); }
-function deleteAccount() { if(confirm("Emin misin?")) auth.currentUser.delete().then(() => location.reload()); }
+function goPremium() { db.ref('users/' + auth.currentUser.uid + '/isPremium').set(true); alert("Sınırsız güç seninle! 🏆"); }
