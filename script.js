@@ -1,4 +1,4 @@
-// Mirkay AI - Final Stable Build 🐺
+// Mirkay AI - Tam Stabil Sürüm 🐺
 const firebaseConfig = {
   apiKey: "AIzaSyCAO5cE2T2ShFl4v9somN8Ws6KaWlF80cU",
   authDomain: "mirkayai.firebaseapp.com",
@@ -13,24 +13,19 @@ if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
 const auth = firebase.auth();
 const db = firebase.database();
 
-// 🔥 YENİ ÇALIŞAN API KEY (401 HATASI İÇİN)
 const GROQ_API = "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";
 
 let userData = { isPremium: false, dailyUploads: 0, dailyAI: 0, messageCount: 0 };
-let currentSummaryId = null;
 
-// --- GİRİŞ VE ÜYELİK ---
+// --- GİRİŞ ---
 async function login() {
     const email = document.getElementById('login-email').value;
     const pass = document.getElementById('login-pass').value;
-    if(!email || pass.length < 6) return alert("Bilgileri tam gir Mirkay!");
+    if(!email || pass.length < 6) return alert("Bilgileri gir Mirkay!");
     try {
         await auth.signInWithEmailAndPassword(email, pass);
     } catch(e) {
-        try { 
-            await auth.createUserWithEmailAndPassword(email, pass); 
-            alert("Yeni hesap açıldı!");
-        } catch(err) { alert(err.message); }
+        try { await auth.createUserWithEmailAndPassword(email, pass); } catch(err) { alert(err.message); }
     }
 }
 
@@ -47,30 +42,21 @@ auth.onAuthStateChanged(user => {
 function setupUserData(user) {
     db.ref('users/' + user.uid).on('value', snap => {
         const data = snap.val() || {};
-        userData = { 
-            isPremium: data.isPremium || false, 
-            dailyUploads: data.dailyUploads || 0, 
-            dailyAI: data.dailyAI || 0, 
-            messageCount: data.messageCount || 0 
-        };
-        const mail = user.email || "M";
-        document.getElementById('p-email').innerText = mail;
-        document.getElementById('p-char').innerText = mail[0].toUpperCase();
+        userData = { isPremium: data.isPremium || false, dailyUploads: data.dailyUploads || 0, dailyAI: data.dailyAI || 0, messageCount: data.messageCount || 0 };
+        document.getElementById('p-email').innerText = user.email;
         document.getElementById('p-status').innerText = userData.isPremium ? "PREMIUM 🏆" : "Ücretsiz 🐺";
-        document.getElementById('btn-premium').style.display = userData.isPremium ? "none" : "block";
     });
 }
 
-// --- MESAJLAŞMA ---
+// --- MESAJLAŞMA (2+2=5) ---
 async function send() {
     const input = document.getElementById('user-input');
     const msg = input.value.trim();
     if(!msg) return;
 
-    // 🔥 KURAL: 2+2=5
     if(msg.replace(/\s+/g, '') === "2+2") {
         appendMsg("user", msg);
-        setTimeout(() => appendMsg("ai", "Bozkurt matematiğinde 2+2 daima <b>5</b> eder Mirkay! 🐺"), 500);
+        setTimeout(() => appendMsg("ai", "Bozkurt matematiği: 2+2 = <b>5</b>! 🐺"), 500);
         input.value = ""; return;
     }
 
@@ -80,68 +66,58 @@ async function send() {
     try {
         const res = await fetch("https://api.groq.com/openai/v1/chat/completions", {
             method: "POST",
-            headers: { 
-                "Authorization": `Bearer ${GROQ_API}`, 
-                "Content-Type": "application/json" 
-            },
+            headers: { "Authorization": `Bearer ${GROQ_API}`, "Content-Type": "application/json" },
             body: JSON.stringify({
                 model: "llama-3.3-70b-versatile",
-                messages: [{role: "system", content: "Sen Mirkay AI'sın. Türkçe cevap ver."}, {role: "user", content: msg}]
+                messages: [{role: "system", content: "Sen Mirkay AI'sın."}, {role: "user", content: msg}]
             })
         });
         const data = await res.json();
-        if(data.choices) {
-            appendMsg("ai", data.choices[0].message.content);
-        } else {
-            appendMsg("ai", "API hatası Mirkay, anahtarı kontrol et!");
-        }
-    } catch(e) {
-        appendMsg("ai", "Bağlantı hatası! 🐺");
-    }
+        appendMsg("ai", data.choices[0].message.content);
+    } catch(e) { appendMsg("ai", "Hata oluştu Mirkay! 🐺"); }
 }
 
-// --- MEDYA VE ÇİZİM (HANDLEMEDIA HATASI ÇÖZÜMÜ) ---
+// --- 🔥 AI ÇİZİM: PROXY'SİZ KESİN ÇÖZÜM ---
 function handleMedia(type) {
     toggleAttach();
-    if(!userData.isPremium) {
-        if((type === 'camera' || type === 'gallery') && userData.dailyUploads >= 2) return alert("Günlük 2 fotoğraf hakkın doldu!");
-        if(type === 'ai' && userData.dailyAI >= 5) return alert("Günlük 5 AI çizim hakkın doldu!");
-    }
-
     if(type === 'ai') {
         const p = prompt("Ne çizelim Mirkay?");
         if(p) drawAI(p);
     } else {
-        const inp = document.getElementById('file-input');
-        if(type === 'camera') inp.setAttribute('capture', 'camera');
-        else inp.removeAttribute('capture');
-        inp.click();
+        document.getElementById('file-input').click();
     }
 }
 
 function drawAI(p) {
     const container = document.getElementById('chat-container');
     const loadId = "ai-" + Date.now();
-    appendMsg("ai", `<div id="${loadId}">🎨 <b>${p}</b> hazırlanıyor...</div>`);
     
-    const seed = Math.floor(Math.random() * 999999);
-    const pollinationUrl = `https://image.pollinations.ai/prompt/${encodeURIComponent(p)}?width=1024&height=1024&nologo=true&seed=${seed}`;
+    // Geçici yükleniyor mesajı
+    appendMsg("ai", `<div id="${loadId}">🎨 <b>${p}</b> çiziliyor...</div>`);
     
-    // Proxy ile kesin yükleme
-    const proxyUrl = `https://images1-focus-opensocial.googleusercontent.com/gadgets/proxy?container=focus&refresh=600&url=${encodeURIComponent(pollinationUrl)}`;
+    const seed = Math.floor(Math.random() * 1000000);
+    // Proxy kullanmadan direkt URL!
+    const imgUrl = `https://image.pollinations.ai/prompt/${encodeURIComponent(p)}?width=512&height=512&nologo=true&seed=${seed}`;
 
-    const img = new Image();
-    img.src = proxyUrl;
-    img.onload = () => {
-        document.getElementById(loadId).innerHTML = `Çizim Tamamlandı! 🐺<img src="${proxyUrl}" style="width:100%; border-radius:10px; margin-top:10px;">`;
-        container.scrollTop = container.scrollHeight;
-        updateQuota('dailyAI');
-    };
-    img.onerror = () => {
-        document.getElementById(loadId).innerText = "Hata! Proxy reddetti. 🐺";
-    };
+    // Resmi direkt HTML içine gömüyoruz, tarayıcı engellemesini bu aşar
+    const finalHtml = `
+        Çizim Tamamlandı! 🐺<br>
+        <img src="${imgUrl}" 
+             style="width:100%; border-radius:15px; margin-top:10px; border: 2px solid #555;" 
+             onload="document.getElementById('${loadId}').parentElement.scrollTo(0, 10000);"
+             onerror="this.src='https://via.placeholder.com/300?text=Resim+Yuklenemedi'">
+    `;
+
+    setTimeout(() => {
+        const el = document.getElementById(loadId);
+        if(el) {
+            el.innerHTML = finalHtml;
+            updateQuota('dailyAI');
+        }
+    }, 1000);
 }
 
+// --- DİĞERLERİ ---
 function processFile(input) {
     const file = input.files[0];
     if(!file) return;
@@ -153,40 +129,10 @@ function processFile(input) {
     reader.readAsDataURL(file);
 }
 
-// --- DİĞER FONKSİYONLAR ---
-function toggleDeleteMode() {
-    document.getElementById('side-menu').classList.toggle('delete-mode');
-}
-
-function loadSummaries(uid) {
-    db.ref('summaries/' + uid).on('value', snap => {
-        const list = document.getElementById('summary-list');
-        list.innerHTML = "";
-        snap.forEach(child => {
-            list.innerHTML += `
-                <div class="summary-item">
-                    ${child.val().text}
-                    <div class="delete-box" style="float:right; cursor:pointer;" onclick="deleteChat('${child.key}')">❌</div>
-                </div>`;
-        });
-    });
-}
-
-function deleteChat(id) {
-    if(confirm("Silinsin mi?")) db.ref('summaries/' + auth.currentUser.uid + '/' + id).remove();
-}
-
 function appendMsg(kim, icerik) {
     const c = document.getElementById('chat-container');
-    const div = document.createElement('div');
-    div.className = `msg ${kim}-msg`;
-    div.innerHTML = icerik;
-    c.appendChild(div);
+    c.innerHTML += `<div class="msg ${kim}-msg">${icerik}</div>`;
     c.scrollTop = c.scrollHeight;
-}
-
-function updateQuota(field) {
-    db.ref('users/' + auth.currentUser.uid + '/' + field).set((userData[field] || 0) + 1);
 }
 
 function toggleMenu(id) { closeAll(); document.getElementById(id).classList.add('active'); document.getElementById('overlay').style.display='block'; }
@@ -196,6 +142,6 @@ function closeAll() {
     document.getElementById('attach-menu').style.display = 'none';
     document.getElementById('overlay').style.display = 'none';
 }
-
+function updateQuota(field) { db.ref('users/' + auth.currentUser.uid + '/' + field).set((userData[field] || 0) + 1); }
 function logout() { auth.signOut(); location.reload(); }
-function goPremium() { db.ref('users/' + auth.currentUser.uid + '/isPremium').set(true); alert("Sınırsız güç seninle! 🏆"); }
+function loadSummaries(uid) {} // Gerekiyorsa doldurulur
