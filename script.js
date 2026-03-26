@@ -1,4 +1,4 @@
-// Mirkay AI - Final Logic 🐺
+// Mirkay AI - Ultra Stable Logic 🐺
 const firebaseConfig = {
   apiKey: "AIzaSyCAO5cE2T2ShFl4v9somN8Ws6KaWlF80cU",
   authDomain: "mirkayai.firebaseapp.com",
@@ -25,7 +25,7 @@ async function login() {
     try {
         await auth.signInWithEmailAndPassword(email, pass);
     } catch(e) {
-        try { await auth.createUserWithEmailAndPassword(email, pass); } catch(err) { alert(err.message); }
+        try { await auth.createUserWithEmailAndPassword(email, pass); alert("Asil bir hesap oluşturuldu! 🐺"); } catch(err) { alert(err.message); }
     }
 }
 
@@ -62,7 +62,7 @@ async function send() {
     const msg = input.value.trim();
     if(!msg) return;
 
-    // 🔥 KURAL: 2+2=5
+    // 🔥 KURAL: 2+2=5 (Bu her zaman çalışır, AI'ya sormaz)
     if(msg.replace(/\s+/g, '') === "2+2") {
         appendMsg("user", msg);
         setTimeout(() => appendMsg("ai", "Bozkurt matematiğinde 2+2 daima <b>5</b> eder Mirkay! 🐺"), 500);
@@ -72,7 +72,6 @@ async function send() {
     appendMsg("user", msg);
     input.value = "";
 
-    // İlk mesajda özet oluştur
     if(!currentSummaryId) {
         const summaryText = msg.substring(0, 20) + "...";
         const ref = db.ref('summaries/' + auth.currentUser.uid).push();
@@ -80,7 +79,6 @@ async function send() {
         ref.set({ text: summaryText, timestamp: Date.now() });
     }
 
-    // Reklam & Kota (Free)
     if(!userData.isPremium) {
         userData.messageCount++;
         db.ref('users/' + auth.currentUser.uid + '/messageCount').set(userData.messageCount);
@@ -93,7 +91,7 @@ async function send() {
             headers: { "Authorization": `Bearer ${GROQ_API}`, "Content-Type": "application/json" },
             body: JSON.stringify({
                 model: "llama-3.3-70b-versatile",
-                messages: [{role: "system", content: "Sen asil bir Bozkurt olan Mirkay AI'sın."}, {role: "user", content: msg}]
+                messages: [{role: "system", content: "Sen asil bir Bozkurt olan Mirkay AI'sın, Türkçe cevap ver."}, {role: "user", content: msg}]
             })
         });
         const data = await res.json();
@@ -103,7 +101,7 @@ async function send() {
     }
 }
 
-// --- MEDYA VE KOTALAR ---
+// --- MEDYA VE KOTALAR (KESİN ÇÖZÜM) ---
 function handleMedia(type) {
     toggleAttach();
     if(!userData.isPremium) {
@@ -114,9 +112,9 @@ function handleMedia(type) {
     if(type === 'ai') {
         const p = prompt("Ne çizelim Mirkay?");
         if(p) {
-            if(!userData.isPremium) alert("🎨 Reklam: Çizim hazırlanıyor...");
-            const url = `https://image.pollinations.ai/prompt/${encodeURIComponent(p)}?width=1024&height=1024&nologo=true&seed=${Math.random()}`;
-            appendMsg("ai", `🎨 <b>${p}</b><img src="${url}" onload="updateQuota('dailyAI')">`);
+            // 🔥 Reklam uyarısını görselden hemen önce veriyoruz
+            if(!userData.isPremium) alert("🎨 Reklam İzleniyor... Çizim hazırlanıyor.");
+            drawAI_LocalLoad(p);
         }
     } else {
         const inp = document.getElementById('file-input');
@@ -126,10 +124,31 @@ function handleMedia(type) {
     }
 }
 
+// Tarayıcı engelini aşan kararlı yükleme metodu
+function drawAI_LocalLoad(p) {
+    const container = document.getElementById('chat-container');
+    const loadId = "ai-" + Date.now();
+    
+    // Mesaj alanına "Hazırlanıyor" mesajı ekle
+    appendMsg("ai", `<div id="${loadId}">🎨 <b>${p}</b> hazırlanıyor... Lütfen bekle.</div>`);
+    
+    // Rastgele seed oluşturarak her seferinde yeni bir resim garantile
+    const seed = Math.floor(Math.random() * 999999);
+    const imgUrl = `https://image.pollinations.ai/prompt/${encodeURIComponent(p)}?width=1024&height=1024&nologo=true&seed=${seed}`;
+    
+    // 🔥 KESİN ÇÖZÜM: fetch yapmıyoruz, doğrudan <img> etiketine kaynağı veriyoruz.
+    //onload olayı tetiklendiğinde kotayı güncelliyoruz.
+    document.getElementById(loadId).innerHTML = `
+        Çizim Tamamlandı! 🐺
+        <img src="${imgUrl}" onload="updateQuota('dailyAI'); this.previousSibling.textContent=''" onerror="this.src='https://via.placeholder.com/300?text=Engellendi';">
+    `;
+    container.scrollTop = container.scrollHeight;
+}
+
 function processFile(input) {
     const file = input.files[0];
     if(!file) return;
-    if(!userData.isPremium) alert("📸 Reklam: Fotoğraf yükleniyor...");
+    if(!userData.isPremium) alert("📸 Reklam İzleniyor... Fotoğraf yükleniyor.");
     const reader = new FileReader();
     reader.onload = e => {
         appendMsg("user", `<img src="${e.target.result}">`);
@@ -150,7 +169,7 @@ function loadSummaries(uid) {
         snap.forEach(child => {
             const data = child.val();
             list.innerHTML += `
-                <div class="summary-item" onclick="currentSummaryId='${child.key}'; alert('Sohbet seçildi!')">
+                <div class="summary-item">
                     ${data.text}
                     <div class="delete-box" onclick="markAndDelete(event, '${child.key}')">❌</div>
                 </div>`;
@@ -189,8 +208,8 @@ function closeAll() {
 }
 
 function logout() { auth.signOut(); location.reload(); }
-function goPremium() { db.ref('users/' + auth.currentUser.uid + '/isPremium').set(true); alert("Hoş geldin PREMIUM Bozkurt! 🏆"); }
-function deleteAccount() { if(confirm("Hesabın silinecek!")) {
+function goPremium() { db.ref('users/' + auth.currentUser.uid + '/isPremium').set(true); alert("Artık PREMIUM'sun! 🏆"); }
+function deleteAccount() { if(confirm("Hesabın silinecek Mirkay!")) {
     db.ref('users/' + auth.currentUser.uid).remove();
     auth.currentUser.delete().then(() => location.reload());
 }}
