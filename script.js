@@ -1,4 +1,4 @@
-// Mirkay AI - Tam Stabil Sürüm 🐺
+// Mirkay AI - Final Build 🐺
 const firebaseConfig = {
   apiKey: "AIzaSyCAO5cE2T2ShFl4v9somN8Ws6KaWlF80cU",
   authDomain: "mirkayai.firebaseapp.com",
@@ -12,12 +12,11 @@ const firebaseConfig = {
 if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
 const auth = firebase.auth();
 const db = firebase.database();
-
 const GROQ_API = "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";
 
 let userData = { isPremium: false, dailyUploads: 0, dailyAI: 0, messageCount: 0 };
 
-// --- GİRİŞ ---
+// Giriş İşlemleri
 async function login() {
     const email = document.getElementById('login-email').value;
     const pass = document.getElementById('login-pass').value;
@@ -33,7 +32,6 @@ auth.onAuthStateChanged(user => {
     if(user) {
         document.getElementById('login-screen').style.display = 'none';
         setupUserData(user);
-        loadSummaries(user.uid);
     } else {
         document.getElementById('login-screen').style.display = 'flex';
     }
@@ -43,12 +41,11 @@ function setupUserData(user) {
     db.ref('users/' + user.uid).on('value', snap => {
         const data = snap.val() || {};
         userData = { isPremium: data.isPremium || false, dailyUploads: data.dailyUploads || 0, dailyAI: data.dailyAI || 0, messageCount: data.messageCount || 0 };
-        document.getElementById('p-email').innerText = user.email;
         document.getElementById('p-status').innerText = userData.isPremium ? "PREMIUM 🏆" : "Ücretsiz 🐺";
     });
 }
 
-// --- MESAJLAŞMA (2+2=5) ---
+// Mesaj Gönderme (2+2=5 kuralı dahil)
 async function send() {
     const input = document.getElementById('user-input');
     const msg = input.value.trim();
@@ -74,10 +71,10 @@ async function send() {
         });
         const data = await res.json();
         appendMsg("ai", data.choices[0].message.content);
-    } catch(e) { appendMsg("ai", "Hata oluştu Mirkay! 🐺"); }
+    } catch(e) { appendMsg("ai", "Bağlantı hatası Mirkay! 🐺"); }
 }
 
-// --- 🔥 AI ÇİZİM: PROXY'SİZ KESİN ÇÖZÜM ---
+// 🔥 AI ÇİZİM - BEYAZ EKRAN HATASI ÇÖZÜMÜ
 function handleMedia(type) {
     toggleAttach();
     if(type === 'ai') {
@@ -92,56 +89,43 @@ function drawAI(p) {
     const container = document.getElementById('chat-container');
     const loadId = "ai-" + Date.now();
     
-    // Geçici yükleniyor mesajı
+    // Yükleniyor mesajı
     appendMsg("ai", `<div id="${loadId}">🎨 <b>${p}</b> çiziliyor...</div>`);
     
     const seed = Math.floor(Math.random() * 1000000);
-    // Proxy kullanmadan direkt URL!
-    const imgUrl = `https://image.pollinations.ai/prompt/${encodeURIComponent(p)}?width=512&height=512&nologo=true&seed=${seed}`;
+    // Yeni link yapısı (Proxy'siz, direkt browser dostu)
+    const imgUrl = `https://pollinations.ai/p/${encodeURIComponent(p)}?width=512&height=512&seed=${seed}&nologo=true`;
 
-    // Resmi direkt HTML içine gömüyoruz, tarayıcı engellemesini bu aşar
-    const finalHtml = `
-        Çizim Tamamlandı! 🐺<br>
-        <img src="${imgUrl}" 
-             style="width:100%; border-radius:15px; margin-top:10px; border: 2px solid #555;" 
-             onload="document.getElementById('${loadId}').parentElement.scrollTo(0, 10000);"
-             onerror="this.src='https://via.placeholder.com/300?text=Resim+Yuklenemedi'">
-    `;
-
+    // JavaScript ile resmi kontrol ederek basıyoruz
     setTimeout(() => {
-        const el = document.getElementById(loadId);
-        if(el) {
-            el.innerHTML = finalHtml;
+        const msgDiv = document.getElementById(loadId);
+        if(msgDiv) {
+            msgDiv.innerHTML = `
+                Çizim Tamamlandı! 🐺<br>
+                <img src="${imgUrl}" 
+                     style="width:100%; border-radius:12px; margin-top:10px; display:block;" 
+                     onload="this.style.display='block'; window.scrollTo(0,document.body.scrollHeight);"
+                     onerror="this.src='https://via.placeholder.com/512?text=Tekrar+Dene'">
+            `;
             updateQuota('dailyAI');
         }
-    }, 1000);
-}
-
-// --- DİĞERLERİ ---
-function processFile(input) {
-    const file = input.files[0];
-    if(!file) return;
-    const reader = new FileReader();
-    reader.onload = e => {
-        appendMsg("user", `<img src="${e.target.result}" style="width:100%; border-radius:10px;">`);
-        updateQuota('dailyUploads');
-    };
-    reader.readAsDataURL(file);
+    }, 500);
 }
 
 function appendMsg(kim, icerik) {
     const c = document.getElementById('chat-container');
-    c.innerHTML += `<div class="msg ${kim}-msg">${icerik}</div>`;
+    const div = document.createElement('div');
+    div.className = `msg ${kim}-msg`;
+    div.innerHTML = icerik;
+    c.appendChild(div);
     c.scrollTop = c.scrollHeight;
 }
 
-function toggleMenu(id) { closeAll(); document.getElementById(id).classList.add('active'); document.getElementById('overlay').style.display='block'; }
+function updateQuota(field) { db.ref('users/' + auth.currentUser.uid + '/' + field).set((userData[field] || 0) + 1); }
 function toggleAttach() { const m = document.getElementById('attach-menu'); m.style.display = m.style.display === 'none' ? 'flex' : 'none'; }
+function toggleMenu(id) { closeAll(); document.getElementById(id).classList.add('active'); document.getElementById('overlay').style.display='block'; }
 function closeAll() { 
     ['side-menu','profile-menu'].forEach(m => document.getElementById(m).classList.remove('active'));
     document.getElementById('attach-menu').style.display = 'none';
     document.getElementById('overlay').style.display = 'none';
 }
-function updateQuota(field) { db.ref('users/' + auth.currentUser.uid + '/' + field).set((userData[field] || 0) + 1); }
-function logout() { auth.signOut(); location.reload(); }
-function loadSummaries(uid) {} // Gerekiyorsa doldurulur
