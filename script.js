@@ -1,4 +1,4 @@
-// Mirkay AI - Ultra Kararlı Sürüm 🐺
+// Mirkay AI - Final Logic 🐺
 const firebaseConfig = {
   apiKey: "AIzaSyCAO5cE2T2ShFl4v9somN8Ws6KaWlF80cU",
   authDomain: "mirkayai.firebaseapp.com",
@@ -9,30 +9,23 @@ const firebaseConfig = {
   appId: "1:467181525936:web:16dc00ac9f155f92ccd475"
 };
 
-// Firebase Başlatma (Hata almamak için kontrol ekledik)
-if (!firebase.apps.length) {
-    firebase.initializeApp(firebaseConfig);
-}
+if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
 const auth = firebase.auth();
 const db = firebase.database();
-const GROQ_API = "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";
+const GROQ_API = "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";
 
 let userData = { isPremium: false, dailyUploads: 0, dailyAI: 0, messageCount: 0 };
 let currentSummaryId = null;
 
-// --- GİRİŞ KONTROLÜ ---
+// --- GİRİŞ VE ÜYELİK ---
 async function login() {
     const email = document.getElementById('login-email').value;
     const pass = document.getElementById('login-pass').value;
-    if(!email || pass.length < 6) return alert("E-posta gir ve şifre en az 6 karakter olsun Mirkay!");
-    
+    if(!email || pass.length < 6) return alert("Email ve en az 6 haneli şifre gir Mirkay!");
     try {
         await auth.signInWithEmailAndPassword(email, pass);
     } catch(e) {
-        try {
-            await auth.createUserWithEmailAndPassword(email, pass);
-            alert("Yeni asil hesap oluşturuldu! 🐺");
-        } catch(err) { alert("Hata: " + err.message); }
+        try { await auth.createUserWithEmailAndPassword(email, pass); } catch(err) { alert(err.message); }
     }
 }
 
@@ -55,59 +48,58 @@ function setupUserData(user) {
             dailyAI: data.dailyAI || 0,
             messageCount: data.messageCount || 0
         };
+        const mail = user.email || "M";
         document.getElementById('p-email').innerText = user.email;
-        document.getElementById('p-char').innerText = user.email[0].toUpperCase();
+        document.getElementById('p-char').innerText = mail[0].toUpperCase();
         document.getElementById('p-status').innerText = userData.isPremium ? "Statü: PREMIUM 🏆" : "Statü: Ücretsiz 🐺";
         document.getElementById('btn-premium').style.display = userData.isPremium ? "none" : "block";
     });
 }
 
-// --- MESAJ GÖNDERME ---
+// --- MESAJLAŞMA VE KURAL ---
 async function send() {
     const input = document.getElementById('user-input');
     const msg = input.value.trim();
     if(!msg) return;
 
-    // 🔥 KURAL: 2+2=5 (Bunu her zaman yapacak)
+    // 🔥 KURAL: 2+2=5
     if(msg.replace(/\s+/g, '') === "2+2") {
         appendMsg("user", msg);
-        setTimeout(() => appendMsg("ai", "Bozkurt matematiğinde 2+2 daima <b>5</b> eder Mirkay! 🐺🔥"), 500);
+        setTimeout(() => appendMsg("ai", "Bozkurt matematiğinde 2+2 daima <b>5</b> eder Mirkay! 🐺"), 500);
         input.value = ""; return;
     }
 
     appendMsg("user", msg);
     input.value = "";
 
-    // Sohbet Özetini Kaydet (İlk Mesajda)
+    // İlk mesajda özet oluştur
     if(!currentSummaryId) {
-        const summary = msg.substring(0, 20) + "...";
+        const summaryText = msg.substring(0, 20) + "...";
         const ref = db.ref('summaries/' + auth.currentUser.uid).push();
         currentSummaryId = ref.key;
-        ref.set({ text: summary, timestamp: Date.now() });
+        ref.set({ text: summaryText, timestamp: Date.now() });
     }
 
-    // Reklam & Kota Kontrolü
+    // Reklam & Kota (Free)
     if(!userData.isPremium) {
         userData.messageCount++;
         db.ref('users/' + auth.currentUser.uid + '/messageCount').set(userData.messageCount);
-        if(userData.messageCount % 10 === 0) alert("📢 REKLAM: Premium'a geçerek Mirkay AI'yı destekle!");
+        if(userData.messageCount % 10 === 0) alert("📢 REKLAM: Mirkay AI Premium ile sınırsız mesajlaş!");
     }
 
-    // AI Cevabı
     try {
-        const response = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+        const res = await fetch("https://api.groq.com/openai/v1/chat/completions", {
             method: "POST",
             headers: { "Authorization": `Bearer ${GROQ_API}`, "Content-Type": "application/json" },
             body: JSON.stringify({
                 model: "llama-3.3-70b-versatile",
-                messages: [{role: "system", content: "Sen Mirkay AI'sın. Bilge ve asil bir Bozkurt gibi davran."}, {role: "user", content: msg}]
+                messages: [{role: "system", content: "Sen asil bir Bozkurt olan Mirkay AI'sın."}, {role: "user", content: msg}]
             })
         });
-        const data = await response.json();
-        if(data.choices) appendMsg("ai", data.choices[0].message.content);
-        else throw new Error();
+        const data = await res.json();
+        appendMsg("ai", data.choices[0].message.content);
     } catch(e) {
-        appendMsg("ai", "Sistem yoğun Mirkay, asaletini tazeleyip tekrar yaz! 🐺");
+        appendMsg("ai", "Sistemde fırtına var Mirkay, birazdan tekrar dene! 🐺");
     }
 }
 
@@ -115,29 +107,29 @@ async function send() {
 function handleMedia(type) {
     toggleAttach();
     if(!userData.isPremium) {
-        if((type === 'camera' || type === 'gallery') && userData.dailyUploads >= 2) return alert("Günlük 2 fotoğraf hakkın doldu!");
-        if(type === 'ai' && userData.dailyAI >= 5) return alert("Günlük 5 AI çizim hakkın doldu!");
+        if((type === 'camera' || type === 'gallery') && userData.dailyUploads >= 2) return alert("Günlük 2 fotoğraf hakkın bitti!");
+        if(type === 'ai' && userData.dailyAI >= 5) return alert("Günlük 5 AI çizim hakkın bitti!");
     }
 
     if(type === 'ai') {
-        const p = prompt("Ne çizelim?");
+        const p = prompt("Ne çizelim Mirkay?");
         if(p) {
-            if(!userData.isPremium) alert("🎨 Reklam İzleniyor: Çizim hazırlanıyor...");
+            if(!userData.isPremium) alert("🎨 Reklam: Çizim hazırlanıyor...");
             const url = `https://image.pollinations.ai/prompt/${encodeURIComponent(p)}?width=1024&height=1024&nologo=true&seed=${Math.random()}`;
             appendMsg("ai", `🎨 <b>${p}</b><img src="${url}" onload="updateQuota('dailyAI')">`);
         }
     } else {
-        const fileInp = document.getElementById('file-input');
-        if(type === 'camera') fileInp.setAttribute('capture', 'camera');
-        else fileInp.removeAttribute('capture');
-        fileInp.click();
+        const inp = document.getElementById('file-input');
+        if(type === 'camera') inp.setAttribute('capture', 'camera');
+        else inp.removeAttribute('capture');
+        inp.click();
     }
 }
 
 function processFile(input) {
     const file = input.files[0];
     if(!file) return;
-    if(!userData.isPremium) alert("📸 Reklam İzleniyor: Fotoğraf yükleniyor...");
+    if(!userData.isPremium) alert("📸 Reklam: Fotoğraf yükleniyor...");
     const reader = new FileReader();
     reader.onload = e => {
         appendMsg("user", `<img src="${e.target.result}">`);
@@ -156,23 +148,26 @@ function loadSummaries(uid) {
         const list = document.getElementById('summary-list');
         list.innerHTML = "";
         snap.forEach(child => {
+            const data = child.val();
             list.innerHTML += `
-                <div class="summary-item">
-                    ${child.val().text}
-                    <div class="delete-check" onclick="markAndDelete('${child.key}')">❌</div>
+                <div class="summary-item" onclick="currentSummaryId='${child.key}'; alert('Sohbet seçildi!')">
+                    ${data.text}
+                    <div class="delete-box" onclick="markAndDelete(event, '${child.key}')">❌</div>
                 </div>`;
         });
     });
 }
 
-function markAndDelete(id) {
-    if(confirm("Bu sohbeti siliyorum Mirkay?")) {
-        db.ref('summaries/' + auth.currentUser.uid + '/' + id).remove();
-    }
-}
-
 function toggleDeleteMode() {
     document.getElementById('side-menu').classList.toggle('delete-mode');
+}
+
+function markAndDelete(e, id) {
+    e.stopPropagation();
+    if(confirm("Bu sohbeti siliyorum Mirkay?")) {
+        db.ref('summaries/' + auth.currentUser.uid + '/' + id).remove();
+        if(currentSummaryId === id) currentSummaryId = null;
+    }
 }
 
 // --- UI YARDIMCILARI ---
@@ -188,16 +183,14 @@ function appendMsg(kim, icerik) {
 function toggleMenu(id) { closeAll(); document.getElementById(id).classList.add('active'); document.getElementById('overlay').style.display='block'; }
 function toggleAttach() { const m = document.getElementById('attach-menu'); m.style.display = m.style.display === 'none' ? 'flex' : 'none'; }
 function closeAll() { 
-    ['side-menu','profile-menu','attach-menu'].forEach(m => {
-        const el = document.getElementById(m);
-        if(el) { el.classList.remove('active'); if(m==='attach-menu') el.style.display='none'; }
-    });
-    document.getElementById('overlay').style.display='none';
+    ['side-menu','profile-menu'].forEach(m => document.getElementById(m).classList.remove('active'));
+    document.getElementById('attach-menu').style.display = 'none';
+    document.getElementById('overlay').style.display = 'none';
 }
 
 function logout() { auth.signOut(); location.reload(); }
-function deleteAccount() { if(confirm("Hesabın sonsuza dek silinecek!")) { 
+function goPremium() { db.ref('users/' + auth.currentUser.uid + '/isPremium').set(true); alert("Hoş geldin PREMIUM Bozkurt! 🏆"); }
+function deleteAccount() { if(confirm("Hesabın silinecek!")) {
     db.ref('users/' + auth.currentUser.uid).remove();
-    auth.currentUser.delete().then(() => location.reload()); 
+    auth.currentUser.delete().then(() => location.reload());
 }}
-function goPremium() { db.ref('users/' + auth.currentUser.uid + '/isPremium').set(true); alert("Artık PREMIUM Bozkurt'sun! 🏆"); }
